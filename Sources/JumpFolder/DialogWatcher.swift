@@ -139,20 +139,28 @@ final class DialogWatcher {
             return
         }
         let element = AX.app(app.processIdentifier)
+        let make = { (dialog: AXUIElement, kind: FileDialog.Kind) in
+            FileDialog(pid: app.processIdentifier, bundleID: app.bundleIdentifier,
+                       appName: app.localizedName ?? "the app", element: dialog, kind: kind)
+        }
         if let window = AX.element(element, kAXFocusedWindowAttribute) {
-            if let kind = Self.kind(of: window) {
-                setDialog(FileDialog(pid: app.processIdentifier, bundleID: app.bundleIdentifier,
-                                     appName: app.localizedName ?? "the app", element: window, kind: kind))
-                return
+            // The focused window itself, or what holds it: the dialog's own "Go to" sheet is
+            // listed as a window and can have the focus.
+            var candidate: AXUIElement? = window
+            for _ in 0..<3 {
+                guard let current = candidate else { break }
+                if let kind = Self.kind(of: current) { return setDialog(make(current, kind)) }
+                candidate = AX.element(current, kAXParentAttribute)
+                if let next = candidate, AX.role(next) == kAXApplicationRole { break }
             }
-            // A sheet on the focused window.
+            // A sheet on the focused window (a Save sheet on a document window).
             for child in AX.children(window) where AX.role(child) == kAXSheetRole {
-                if let kind = Self.kind(of: child) {
-                    setDialog(FileDialog(pid: app.processIdentifier, bundleID: app.bundleIdentifier,
-                                         appName: app.localizedName ?? "the app", element: child, kind: kind))
-                    return
-                }
+                if let kind = Self.kind(of: child) { return setDialog(make(child, kind)) }
             }
+        }
+        // Last, any of the app's windows: a dialog that is up but not focused (its sheet is).
+        for window in AX.value(element, kAXWindowsAttribute) as? [AXUIElement] ?? [] {
+            if let kind = Self.kind(of: window) { return setDialog(make(window, kind)) }
         }
         setDialog(nil)
     }

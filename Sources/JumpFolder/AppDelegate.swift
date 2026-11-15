@@ -222,7 +222,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case ("click", let point):
             let numbers = point.split(separator: ",").compactMap { Double($0) }
             guard numbers.count == 2 else { return Diagnostics.note("debug: click needs x,y") }
-            let hit = ClickTarget.hit(CGPoint(x: numbers[0], y: numbers[1]), in: ClickThrough.windowList())
+            let hit = ClickTarget.hit(CGPoint(x: numbers[0], y: numbers[1]), in: ClickThrough.windowList(), displays: ClickThrough.displayFrames())
             Diagnostics.note("debug: click hits \(hit.map { "\($0.ownerName) \($0.bounds)" } ?? "nothing")")
             if let hit, hit.ownerName == "Finder" { ClickThrough.jump(toFinderWindowAt: hit.bounds) }
         case ("show", "settings"): SettingsWindow.shared.show()

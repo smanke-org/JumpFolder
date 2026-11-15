@@ -135,6 +135,17 @@ import Testing
         #expect(ClickTarget.hit(CGPoint(x: 10, y: 10), in: windows)?.ownerName == "Finder")
     }
 
+    @Test func fullDisplayOverlaysAreSkipped() {
+        let overlay = ClickTarget.Window(ownerPID: 7, ownerName: "Notification Center", bounds: CGRect(x: 0, y: 0, width: 1000, height: 800), layer: 23)
+        let display = CGRect(x: 0, y: 0, width: 1000, height: 800)
+        #expect(ClickTarget.hit(CGPoint(x: 600, y: 500), in: [overlay] + windows, displays: [display])?.ownerName == "Finder")
+        // Without knowing the displays it would look like a click on the overlay.
+        #expect(ClickTarget.hit(CGPoint(x: 600, y: 500), in: [overlay] + windows)?.ownerName == "Notification Center")
+        // A normal-level window covering the display (a full-screen app) still counts.
+        let fullScreenApp = ClickTarget.Window(ownerPID: 8, ownerName: "Safari", bounds: display, layer: 0)
+        #expect(ClickTarget.hit(CGPoint(x: 600, y: 500), in: [fullScreenApp] + windows, displays: [display])?.ownerName == "Safari")
+    }
+
     @Test func matchByBounds() {
         let finder: [(bounds: CGRect, value: String)] = [
             (CGRect(x: 0, y: 0, width: 10, height: 10), "/a"),

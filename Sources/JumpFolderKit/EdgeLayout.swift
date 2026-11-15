@@ -61,13 +61,16 @@ public enum ClickTarget {
         }
     }
 
-    /// The frontmost visible window under `point`, ignoring the window server's own bits and
-    /// invisible windows. Menu bar, overlay and our own windows count: a click there is not a
-    /// click on a Finder window.
-    public static func hit(_ point: CGPoint, in windows: [Window]) -> Window? {
+    /// The frontmost visible window under `point`, ignoring the window server's own bits,
+    /// invisible windows, and windows above the normal level that cover a whole display
+    /// (`displays`): those are click-through overlays, such as Notification Center's, which
+    /// lies over every display all the time. Menu bar, panel and our own windows count: a
+    /// click there is not a click on a Finder window.
+    public static func hit(_ point: CGPoint, in windows: [Window], displays: [CGRect] = []) -> Window? {
         windows.first { w in
             w.alpha > 0.01 && w.bounds.width > 4 && w.bounds.height > 4
                 && w.ownerName != "Window Server" && w.bounds.contains(point)
+                && !(w.layer != 0 && displays.contains { w.bounds.contains($0) })
         }
     }
 

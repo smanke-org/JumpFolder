@@ -86,9 +86,18 @@ final class ClickThrough: @unchecked Sendable {
         let point = event.location
         // A click on the dialog (or inside its frame) is the dialog's.
         if state.frame.contains(point) { return nil }
-        guard let hit = ClickTarget.hit(point, in: Self.windowList()),
+        guard let hit = ClickTarget.hit(point, in: Self.windowList(), displays: Self.displayFrames()),
               hit.ownerName == "Finder", hit.ownerPID != ownPID, hit.layer == 0 else { return nil }
         return hit.bounds
+    }
+
+    /// Every display's frame in global top-left coordinates (CoreGraphics', safe off the main thread).
+    static func displayFrames() -> [CGRect] {
+        var count: UInt32 = 0
+        CGGetActiveDisplayList(0, nil, &count)
+        var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
+        CGGetActiveDisplayList(count, &ids, &count)
+        return ids.prefix(Int(count)).map { CGDisplayBounds($0) }
     }
 
     static func windowList() -> [ClickTarget.Window] {
