@@ -1,0 +1,8 @@
+.build/
+.swiftpm/
+*.dmg
+.DS_Store
+Resources/AppIcon.iconset/
+# Session worktrees and local settings; the agent skill is shared.
+.claude/*
+!.claude/skills/
