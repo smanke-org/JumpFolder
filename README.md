@@ -2,7 +2,7 @@
 
 JumpFolder makes every app's Open and Save dialogs quicker. The folder you want is often already open in a Finder window, so with a dialog in front, just click that Finder window: the dialog goes to its folder and Finder stays behind. A small strip of buttons on the dialog's edge lists your recent and favorite folders and Finder's open windows, and reveals the dialog's folder in Finder.
 
-<p align="center"><img src="docs/images/jumpfolder-strip.png" width="44" alt="The JumpFolder strip: Recent Folders, Favorite Folders, Finder Windows and Reveal in Finder buttons"></p>
+<p align="center"><img src="docs/images/jumpfolder-strip.png" width="72" alt="The JumpFolder strip: Recent, Favorites, Finder and Reveal buttons"></p>
 
 ## Download
 
@@ -18,7 +18,7 @@ Requires macOS 26 or later. Free.
 ## Features
 
 - **Click a Finder window to jump.** With an Open or Save dialog in front, click any Finder window behind it and the dialog goes to that folder. Finder doesn't come forward, so you keep going in the dialog. Hold ⌥ to bring Finder forward instead.
-- **Folder buttons on the dialog's edge.** A small strip follows the dialog as it moves and resizes, on the left or the right, and hides when the dialog closes.
+- **Folder buttons on the dialog's edge.** A small strip follows the dialog as it moves and resizes, on the left or the right, and hides when the dialog closes. Show a label under each button, or icons only for a narrower strip.
   - **Recent Folders**, with the app's own last folder first.
   - **Favorite Folders**, with Add to Favorites for the folder the dialog shows.
   - **Finder Windows**: the folder of every open Finder window.

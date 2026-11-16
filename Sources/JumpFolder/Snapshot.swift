@@ -39,7 +39,7 @@ enum Snapshot {
     }
 
     static var pages: [String] {
-        ["settings-general", "settings-dialogs", "settings-folders", "settings-shortcuts", "edge"]
+        ["settings-general", "settings-dialogs", "settings-folders", "settings-shortcuts", "edge", "edge-icons"]
             + Help.topics.map { "help-\($0.id)" } + ["icon", "menu", "update-prompt", "about"]
     }
 
@@ -73,8 +73,8 @@ enum Snapshot {
             try? await Task.sleep(for: .milliseconds(600))
             return SettingsWindow.shared.debugWindow
         }
-        if page == "edge" {
-            let window = EdgePanel.shared.debugShow(at: NSPoint(x: 200, y: 400))
+        if page == "edge" || page == "edge-icons" {
+            let window = EdgePanel.shared.debugShow(at: NSPoint(x: 200, y: 400), labels: page == "edge")
             try? await Task.sleep(for: .milliseconds(400))
             return window
         }

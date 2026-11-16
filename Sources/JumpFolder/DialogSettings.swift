@@ -21,7 +21,9 @@ struct DialogSettings: View {
                     Text("Right").tag(EdgeSide.right)
                 }
                 .disabled(!settings.edgeControls)
-                Caption("A small strip on the dialog's edge with Recent Folders, Favorite Folders, Finder Windows and Reveal in Finder. Automatic puts it on the left, or on the right when there's no room.")
+                Toggle("Show labels under the buttons", isOn: $settings.edgeLabels)
+                    .disabled(!settings.edgeControls)
+                Caption("A strip on the dialog's edge with Recent Folders, Favorite Folders, Finder Windows and Reveal in Finder. Automatic puts it on the left, or on the right when there's no room. Turn labels off for a narrower strip of icons only.")
             }
             Section("Leave These Apps Alone") {
                 if settings.excludedApps.isEmpty {
@@ -46,6 +48,7 @@ struct DialogSettings: View {
         .onChange(of: settings.clickThrough) { DialogWatcher.shared.settingsChanged() }
         .onChange(of: settings.edgeControls) { DialogWatcher.shared.settingsChanged() }
         .onChange(of: settings.edgeSide) { DialogWatcher.shared.settingsChanged() }
+        .onChange(of: settings.edgeLabels) { DialogWatcher.shared.settingsChanged() }
     }
 
     private func addApp() {

@@ -85,7 +85,7 @@ enum Help {
                 ("Window", "Finder Windows: the folder of every open Finder window"),
                 ("Magnifying glass", "Reveal the dialog's folder in Finder"),
             ]),
-            .text("Pick a folder and the dialog goes there. Choose which side the strip sits on, or turn it off, in Settings › Dialogs. Apps you list under Leave These Apps Alone get no strip."),
+            .text("Pick a folder and the dialog goes there. Choose which side the strip sits on, whether its buttons have labels, or turn it off, in Settings › Dialogs. Apps you list under Leave These Apps Alone get no strip."),
             .tip("Reveal is dimmed when JumpFolder can't tell which folder the dialog shows, such as in an empty folder you went to without JumpFolder."),
         ]),
 

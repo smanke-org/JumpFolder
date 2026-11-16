@@ -40,7 +40,7 @@ final class SettingsSync: ObservableObject {
         MenuHub.foldKey,
         AppAppearance.key,
         "shortcuts",
-        AppSettings.Key.clickThrough, AppSettings.Key.edgeControls, AppSettings.Key.edgeSide,
+        AppSettings.Key.clickThrough, AppSettings.Key.edgeControls, AppSettings.Key.edgeSide, AppSettings.Key.edgeLabels,
         AppSettings.Key.favorites, AppSettings.Key.excludedApps, AppSettings.Key.recentsLimit,
         "confirmQuit", UpdatePolicy.key, UpdateInterval.valueKey, UpdateInterval.unitKey,
     ]
@@ -51,6 +51,7 @@ final class SettingsSync: ObservableObject {
     private static let fallbacks: [String: Any] = [
         "showInDock": false, "showInMenuBar": true, MenuHub.foldKey: true, AppAppearance.key: AppAppearance.system.rawValue,
         AppSettings.Key.clickThrough: true, AppSettings.Key.edgeControls: true, AppSettings.Key.edgeSide: EdgeSide.automatic.rawValue,
+        AppSettings.Key.edgeLabels: true,
         AppSettings.Key.favorites: Data(), AppSettings.Key.excludedApps: [String](), AppSettings.Key.recentsLimit: FolderHistory.defaultLimit,
     ]
 

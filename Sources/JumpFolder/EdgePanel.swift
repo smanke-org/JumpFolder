@@ -29,19 +29,39 @@ final class EdgePanel {
             case .reveal: "Reveal Current Folder in Finder"
             }
         }
+
+        /// The short name under the icon when labels are on.
+        var label: String {
+            switch self {
+            case .recents: "Recent"
+            case .favorites: "Favorites"
+            case .finderWindows: "Finder"
+            case .reveal: "Reveal"
+            }
+        }
     }
 
-    static let buttonSize: CGFloat = 30
+    static let iconPointSize: CGFloat = 20
+    static let labelFontSize: CGFloat = 10
     static let padding: CGFloat = 5
     static let spacing: CGFloat = 4
-    static var stripSize: CGSize {
+
+    /// One button: a square around the icon, or wider and taller to fit the label underneath.
+    static func buttonSize(labels: Bool) -> CGSize {
+        labels ? CGSize(width: 62, height: 48) : CGSize(width: 38, height: 38)
+    }
+
+    static func stripSize(labels: Bool) -> CGSize {
+        let button = buttonSize(labels: labels)
         let count = CGFloat(Button.allCases.count)
-        return CGSize(width: buttonSize + padding * 2,
-                      height: count * buttonSize + (count - 1) * spacing + padding * 2)
+        return CGSize(width: button.width + padding * 2,
+                      height: count * button.height + (count - 1) * spacing + padding * 2)
     }
 
     private lazy var panel = makePanel()
     private var buttons: [Button: NSButton] = [:]
+    /// Whether the buttons were last built with labels; rebuilt when the setting changes.
+    private var builtWithLabels: Bool?
     private lazy var messagePanel = MessagePanel()
 
     func start() {
@@ -57,8 +77,10 @@ final class EdgePanel {
             if watcher.dialog == nil { messagePanel.hide() }
             return
         }
+        let labels = AppSettings.shared.edgeLabels
+        if builtWithLabels != labels { buildButtons(labels: labels) }
         let visible = Self.visibleFrame(around: frame)
-        let strip = EdgeLayout.frame(for: frame, strip: Self.stripSize, side: AppSettings.shared.edgeSide, visible: visible)
+        let strip = EdgeLayout.frame(for: frame, strip: Self.stripSize(labels: labels), side: AppSettings.shared.edgeSide, visible: visible)
         panel.setFrame(Self.appKitRect(strip), display: true)
         buttons[.reveal]?.isEnabled = watcher.currentFolder != nil
         if !panel.isVisible { panel.orderFrontRegardless() }
@@ -68,8 +90,9 @@ final class EdgePanel {
 
     #if DEBUG
     /// Snapshot mode: the strip on its own, without a dialog.
-    func debugShow(at point: NSPoint) -> NSWindow {
-        panel.setFrameOrigin(point)
+    func debugShow(at point: NSPoint, labels: Bool) -> NSWindow {
+        buildButtons(labels: labels)
+        panel.setFrame(NSRect(origin: point, size: Self.stripSize(labels: labels)), display: true)
         panel.orderFrontRegardless()
         return panel
     }
@@ -128,7 +151,7 @@ final class EdgePanel {
     // MARK: - Building
 
     private func makePanel() -> NSPanel {
-        let size = Self.stripSize
+        let size = Self.stripSize(labels: AppSettings.shared.edgeLabels)
         let panel = StripPanel(contentRect: NSRect(origin: .zero, size: size),
                                styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
         panel.isFloatingPanel = true
@@ -148,18 +171,31 @@ final class EdgePanel {
         stack.orientation = .vertical
         stack.spacing = Self.spacing
         stack.edgeInsets = NSEdgeInsets(top: Self.padding, left: Self.padding, bottom: Self.padding, right: Self.padding)
-        for kind in Button.allCases {
-            let button = StripButton(symbol: kind.symbol, help: kind.help) { [weak self] in self?.open(kind) }
-            button.widthAnchor.constraint(equalToConstant: Self.buttonSize).isActive = true
-            button.heightAnchor.constraint(equalToConstant: Self.buttonSize).isActive = true
-            buttons[kind] = button
-            stack.addArrangedSubview(button)
-        }
         let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
         glass.cornerRadius = 12
         glass.contentView = stack
         panel.contentView = glass
+        self.stack = stack
         return panel
+    }
+
+    private weak var stack: NSStackView?
+
+    /// Fills the strip with one button per kind, with or without labels.
+    private func buildButtons(labels: Bool) {
+        _ = panel
+        guard let stack else { return }
+        stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        buttons = [:]
+        let size = Self.buttonSize(labels: labels)
+        for kind in Button.allCases {
+            let button = StripButton(symbol: kind.symbol, help: kind.help, label: labels ? kind.label : nil) { [weak self] in self?.open(kind) }
+            button.widthAnchor.constraint(equalToConstant: size.width).isActive = true
+            button.heightAnchor.constraint(equalToConstant: size.height).isActive = true
+            buttons[kind] = button
+            stack.addArrangedSubview(button)
+        }
+        builtWithLabels = labels
     }
 
     // MARK: - Coordinates
@@ -193,15 +229,42 @@ private final class StripPanel: NSPanel {
 /// background (the first click on another app's floating panel would otherwise be eaten).
 private final class StripButton: NSButton {
     private let onPress: () -> Void
+    private var labelViews: [NSView] = []
 
-    init(symbol: String, help: String, action: @escaping () -> Void) {
+    init(symbol: String, help: String, label: String?, action: @escaping () -> Void) {
         self.onPress = action
         super.init(frame: .zero)
-        image = NSImage(systemSymbolName: symbol, accessibilityDescription: help)
-        imagePosition = .imageOnly
+        let symbolImage = NSImage(systemSymbolName: symbol, accessibilityDescription: help)?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: EdgePanel.iconPointSize, weight: .regular))
         isBordered = false
         bezelStyle = .regularSquare
-        symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
+        title = ""
+        if let label {
+            // Icon over its name, with a little air between them (NSButton's own
+            // image-above layout puts the title right against the image).
+            imagePosition = .noImage
+            let icon = NSImageView(image: symbolImage ?? NSImage())
+            icon.contentTintColor = .labelColor
+            let text = NSTextField(labelWithString: label)
+            text.font = .systemFont(ofSize: EdgePanel.labelFontSize, weight: .medium)
+            text.textColor = .labelColor
+            text.alignment = .center
+            text.lineBreakMode = .byClipping
+            let column = NSStackView(views: [icon, text])
+            column.orientation = .vertical
+            column.alignment = .centerX
+            column.spacing = 3
+            column.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(column)
+            NSLayoutConstraint.activate([
+                column.centerXAnchor.constraint(equalTo: centerXAnchor),
+                column.centerYAnchor.constraint(equalTo: centerYAnchor),
+            ])
+            labelViews = [icon, text]
+        } else {
+            image = symbolImage
+            imagePosition = .imageOnly
+        }
         contentTintColor = .labelColor
         toolTip = help
         setAccessibilityLabel(help)
@@ -213,6 +276,15 @@ private final class StripButton: NSButton {
     required init?(coder: NSCoder) { fatalError() }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    /// The icon and label inside are decoration: every click belongs to the button.
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        frame.contains(point) ? self : nil
+    }
+
+    override var isEnabled: Bool {
+        didSet { labelViews.forEach { $0.alphaValue = isEnabled ? 1 : 0.35 } }
+    }
 
     override func mouseDown(with event: NSEvent) {
         guard isEnabled else { return }

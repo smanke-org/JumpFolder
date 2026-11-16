@@ -32,6 +32,7 @@ final class AppSettings {
         static let clickThrough = "clickThrough"
         static let edgeControls = "edgeControls"
         static let edgeSide = "edgeSide"
+        static let edgeLabels = "edgeLabels"
         static let favorites = "favorites"
         static let excludedApps = "excludedApps"
         static let recentsLimit = "recentsLimit"
@@ -75,6 +76,11 @@ final class AppSettings {
         didSet { defaults.set(edgeSide.rawValue, forKey: Key.edgeSide) }
     }
 
+    /// Names under the strip's icons ("Recent", "Favorites"…), or icons alone.
+    var edgeLabels: Bool {
+        didSet { defaults.set(edgeLabels, forKey: Key.edgeLabels) }
+    }
+
     var favorites: [Favorite] {
         didSet { if let data = try? JSONEncoder().encode(favorites) { defaults.set(data, forKey: Key.favorites) } }
     }
@@ -109,6 +115,7 @@ final class AppSettings {
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
         edgeControls = defaults.object(forKey: Key.edgeControls) as? Bool ?? true
         edgeSide = defaults.string(forKey: Key.edgeSide).flatMap(EdgeSide.init(rawValue:)) ?? .automatic
+        edgeLabels = defaults.object(forKey: Key.edgeLabels) as? Bool ?? true
         favorites = Self.loadFavorites(from: defaults)
         excludedApps = defaults.stringArray(forKey: Key.excludedApps) ?? []
         recentsLimit = defaults.object(forKey: Key.recentsLimit) as? Int ?? FolderHistory.defaultLimit
@@ -147,6 +154,7 @@ final class AppSettings {
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
         edgeControls = defaults.object(forKey: Key.edgeControls) as? Bool ?? true
         edgeSide = defaults.string(forKey: Key.edgeSide).flatMap(EdgeSide.init(rawValue:)) ?? .automatic
+        edgeLabels = defaults.object(forKey: Key.edgeLabels) as? Bool ?? true
         favorites = Self.loadFavorites(from: defaults)
         excludedApps = defaults.stringArray(forKey: Key.excludedApps) ?? []
         recentsLimit = defaults.object(forKey: Key.recentsLimit) as? Int ?? FolderHistory.defaultLimit
