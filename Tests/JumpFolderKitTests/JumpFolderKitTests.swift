@@ -155,3 +155,59 @@ import Testing
         #expect(ClickTarget.match(CGRect(x: 120, y: 100, width: 500, height: 400), in: finder) == nil)
     }
 }
+
+@Suite struct FolderRouteTests {
+    let home = "/Users/pat"
+
+    @Test func childOfCurrentOpensOneRow() {
+        let plan = FolderRoute.plan(to: "/Users/pat/Projects/App", from: "/Users/pat/Projects", home: home)
+        #expect(plan == .init(start: .here, opens: ["/Users/pat/Projects/App"]))
+    }
+
+    @Test func sameFolderNeedsNothing() {
+        #expect(FolderRoute.plan(to: "/Users/pat/Projects/", from: "/Users/pat/Projects", home: home)?.steps == 0)
+    }
+
+    @Test func siblingGoesUpOnce() {
+        let plan = FolderRoute.plan(to: "/Users/pat/Work/Notes", from: "/Users/pat/Work/Mail", home: home)
+        #expect(plan == .init(start: .up(1), opens: ["/Users/pat/Work/Notes"]))
+    }
+
+    @Test func farFolderUsesPlaceShortcut() {
+        let plan = FolderRoute.plan(to: "/Users/pat/Desktop/Shots", from: "/Applications/Utilities", home: home)
+        #expect(plan == .init(start: .place(.desktop), opens: ["/Users/pat/Desktop/Shots"]))
+    }
+
+    @Test func homeItself() {
+        #expect(FolderRoute.plan(to: "/Users/pat", from: nil, home: home) == .init(start: .place(.home), opens: []))
+    }
+
+    @Test func otherDiskStartsAtComputer() {
+        let plan = FolderRoute.plan(to: "/Volumes/Backup/Photos", from: "/Users/pat", home: home, volume: "/Volumes/Backup")
+        #expect(plan == .init(start: .place(.computer), opens: ["/Volumes/Backup", "/Volumes/Backup/Photos"]))
+    }
+
+    @Test func rootFolderThroughStartupDisk() {
+        let plan = FolderRoute.plan(to: "/Library/Fonts", from: nil, home: home)
+        #expect(plan == .init(start: .place(.computer), opens: ["/", "/Library", "/Library/Fonts"]))
+    }
+
+    @Test func hiddenFolderHasNoRoute() {
+        #expect(FolderRoute.plan(to: "/Users/pat/.config/app", from: "/Users/pat", home: home) == nil)
+    }
+
+    @Test func upIsLimited() {
+        let plan = FolderRoute.plan(to: "/Users/pat/a", from: "/Users/pat/a/b/c/d", home: home)
+        #expect(plan?.start == .place(.home))
+    }
+}
+
+@Suite struct FolderRouteLinkTests {
+    @Test func cloudDesktopUsesItsRealPath() {
+        let real: (String) -> String = { $0.replacingOccurrences(of: "/Users/pat/Desktop", with: "/Users/pat/Cloud/Desktop") }
+        let plan = FolderRoute.plan(to: "/Users/pat/Code", from: "/Users/pat/Desktop", home: "/Users/pat", real: real)
+        #expect(plan == .init(start: .place(.home), opens: ["/Users/pat/Code"]))
+        let into = FolderRoute.plan(to: "/Users/pat/Desktop/Shots", from: nil, home: "/Users/pat", real: real)
+        #expect(into == .init(start: .place(.desktop), opens: ["/Users/pat/Cloud/Desktop/Shots"]))
+    }
+}

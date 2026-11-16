@@ -52,6 +52,11 @@ enum AX {
         AXUIElementSetAttributeValue(element, attribute as CFString, value) == .success
     }
 
+    /// AXUIElementCopyMultipleAttributeValues puts an error value where an attribute is missing.
+    static func isError(_ value: AnyObject) -> Bool {
+        CFGetTypeID(value) == AXValueGetTypeID() && AXValueGetType(value as! AXValue) == .axError
+    }
+
     @discardableResult
     static func perform(_ element: AXUIElement, _ action: String) -> Bool {
         AXUIElementPerformAction(element, action as CFString) == .success

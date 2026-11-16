@@ -130,7 +130,7 @@ enum Help {
             .heading("Clicking a Finder window doesn't move the dialog"),
             .text("Check that JumpFolder may control Finder in Privacy & Security › Automation. Another dialog helper that also takes clicks on Finder windows can get them first; turn its click-through off."),
             .heading("The dialog shows the Go to Folder sheet briefly"),
-            .text("That's how JumpFolder moves the dialog: it opens Go to Folder (⇧⌘G), types the path and presses Return, just as you would."),
+            .text("JumpFolder usually moves the dialog by opening folders in its list, starting from a nearby place such as your home folder. Folders the list doesn't show, like hidden ones, or a Save dialog shown without its file list, need Go to Folder (⇧⌘G) instead: JumpFolder types the path and presses Return, just as you would."),
         ]),
     ] }
 }

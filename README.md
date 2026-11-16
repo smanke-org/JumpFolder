@@ -34,7 +34,7 @@ Requires macOS 26 or later. Free.
 
 ## How it works
 
-On macOS 26 and later, Open and Save dialogs run in a separate system service, but Accessibility still shows each one as a window of the app that opened it. JumpFolder watches the app in front for that window and places its strip beside it. To take the dialog somewhere, it opens the dialog's own Go to Folder (⇧⌘G), types the path and presses Return, just as you would. Finder windows don't say which folder they show through Accessibility, so JumpFolder asks Finder and matches the window you clicked by its position.
+On macOS 26 and later, Open and Save dialogs run in a separate system service, but Accessibility still shows each one as a window of the app that opened it. JumpFolder watches the app in front for that window and places its strip beside it. To take the dialog somewhere, it starts from the nearest place the dialog has a key for (Home, Desktop, Documents, Downloads, Applications, or a folder or two up) and opens one folder after another in the dialog's own list, so no Go to Folder sheet pops up. For a folder the list can't show, such as a hidden one, it falls back to the dialog's Go to Folder (⇧⌘G), typing the path and pressing Return. Finder windows don't say which folder they show through Accessibility, so JumpFolder asks Finder and matches the window you clicked by its position.
 
 ## Updates
 
