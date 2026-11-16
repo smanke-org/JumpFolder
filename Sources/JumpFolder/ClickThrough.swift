@@ -87,10 +87,14 @@ final class ClickThrough: @unchecked Sendable {
         let point = event.location
         // A click on the dialog (or inside its frame) is the dialog's.
         if state.frame.contains(point) { return nil }
-        // JumpFolder's own windows (the hover ring sits right on top of the Finder window)
-        // never take clicks, so look past them.
-        let windows = Self.windowList().filter { $0.ownerPID != ownPID }
-        guard let hit = ClickTarget.hit(point, in: windows, displays: Self.displayFrames()),
+        // A click on JumpFolder's own buttons (bars, strip: above the normal level) is theirs.
+        // The hover ring sits at the normal level right on the Finder window and takes no
+        // clicks, so look past it.
+        let all = Self.windowList()
+        let displays = Self.displayFrames()
+        if let top = ClickTarget.hit(point, in: all, displays: displays), top.ownerPID == ownPID, top.layer != 0 { return nil }
+        let windows = all.filter { $0.ownerPID != ownPID }
+        guard let hit = ClickTarget.hit(point, in: windows, displays: displays),
               hit.ownerName == "Finder", hit.layer == 0 else { return nil }
         return hit.bounds
     }

@@ -12,29 +12,71 @@ public struct FolderHistory: Codable, Equatable, Sendable {
         }
     }
 
+    /// A folder as one app used it.
+    public struct AppFolder: Codable, Equatable, Sendable {
+        public var path: String
+        public var lastUsed: Date
+        public var uses: Int
+        public init(path: String, lastUsed: Date, uses: Int) {
+            self.path = path
+            self.lastUsed = lastUsed
+            self.uses = uses
+        }
+    }
+
     public static let defaultLimit = 15
     public static let limitRange = 5...50
+    /// How many folders each app keeps for Recent and Most Used.
+    public static let perAppLimit = 50
+    /// Below this many folders of its own, an app's lists are topped up from every app's.
+    public static let ownFolderMinimum = 3
 
     public private(set) var entries: [Entry] = []
     /// Bundle id → the folder that app's dialog was last in.
     public private(set) var lastByApp: [String: String] = [:]
+    /// Bundle id → the folders that app's dialogs used, with how often.
+    public private(set) var byApp: [String: [AppFolder]] = [:]
 
-    public init(entries: [Entry] = [], lastByApp: [String: String] = [:]) {
+    public init(entries: [Entry] = [], lastByApp: [String: String] = [:], byApp: [String: [AppFolder]] = [:]) {
         self.entries = entries
         self.lastByApp = lastByApp
+        self.byApp = byApp
+    }
+
+    private enum CodingKeys: String, CodingKey { case entries, lastByApp, byApp }
+
+    /// History saved before per-app lists existed still loads.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        entries = try c.decodeIfPresent([Entry].self, forKey: .entries) ?? []
+        lastByApp = try c.decodeIfPresent([String: String].self, forKey: .lastByApp) ?? [:]
+        byApp = try c.decodeIfPresent([String: [AppFolder]].self, forKey: .byApp) ?? [:]
     }
 
     public var paths: [String] { entries.map(\.path) }
 
-    /// Moves `path` to the top (or adds it there), notes it as `app`'s last folder, and
-    /// keeps at most `limit` entries.
+    /// Moves `path` to the top (or adds it there), notes it as `app`'s last folder, counts a
+    /// use for `app`, and keeps at most `limit` entries.
     public mutating func record(_ path: String, app: String?, at date: Date = Date(), limit: Int = defaultLimit) {
         let path = FolderPath.normalized(path)
         guard !path.isEmpty else { return }
         entries.removeAll { $0.path == path }
         entries.insert(Entry(path: path, date: date), at: 0)
         trim(to: limit)
-        if let app, !app.isEmpty { lastByApp[app] = path }
+        guard let app, !app.isEmpty else { return }
+        lastByApp[app] = path
+        var folders = byApp[app] ?? []
+        if let index = folders.firstIndex(where: { $0.path == path }) {
+            folders[index].uses += 1
+            folders[index].lastUsed = date
+        } else {
+            folders.append(AppFolder(path: path, lastUsed: date, uses: 1))
+        }
+        if folders.count > Self.perAppLimit {
+            folders.sort { $0.lastUsed > $1.lastUsed }
+            folders.removeLast(folders.count - Self.perAppLimit)
+        }
+        byApp[app] = folders
     }
 
     public mutating func trim(to limit: Int) {
@@ -45,11 +87,41 @@ public struct FolderHistory: Codable, Equatable, Sendable {
     public mutating func remove(_ path: String) {
         entries.removeAll { $0.path == path }
         lastByApp = lastByApp.filter { $0.value != path }
+        byApp = byApp.mapValues { $0.filter { $0.path != path } }
     }
 
     public mutating func clear() {
         entries = []
         lastByApp = [:]
+        byApp = [:]
+    }
+
+    /// Only `app`'s own folders, newest first (no topping up).
+    public func ownRecent(for app: String?, count: Int, exists: (String) -> Bool = { _ in true }) -> [String] {
+        let own = (app.flatMap { byApp[$0] } ?? []).sorted { $0.lastUsed > $1.lastUsed }.map(\.path)
+        return Array(own.filter(exists).prefix(count))
+    }
+
+    /// `app`'s folders, newest first.
+    public func recent(for app: String?, count: Int, exists: (String) -> Bool = { _ in true }) -> [String] {
+        let own = (app.flatMap { byApp[$0] } ?? []).sorted { $0.lastUsed > $1.lastUsed }.map(\.path)
+        return topUp(own, count: count, exists: exists)
+    }
+
+    /// `app`'s folders, most used first (ties: newest first).
+    public func mostUsed(for app: String?, count: Int, exists: (String) -> Bool = { _ in true }) -> [String] {
+        let own = (app.flatMap { byApp[$0] } ?? [])
+            .sorted { ($0.uses, $0.lastUsed) > ($1.uses, $1.lastUsed) }.map(\.path)
+        return topUp(own, count: count, exists: exists)
+    }
+
+    /// An app with only a few folders of its own gets every app's recent ones after them.
+    private func topUp(_ own: [String], count: Int, exists: (String) -> Bool) -> [String] {
+        var result = own.filter(exists)
+        if result.count < Self.ownFolderMinimum {
+            for path in paths where !result.contains(path) && exists(path) { result.append(path) }
+        }
+        return Array(result.prefix(count))
     }
 
     /// What the Recent Folders menu lists for `app`: its own last folder first (if it has

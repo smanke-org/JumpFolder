@@ -41,6 +41,8 @@ final class SettingsSync: ObservableObject {
         AppAppearance.key,
         "shortcuts",
         AppSettings.Key.clickThrough, AppSettings.Key.edgeControls, AppSettings.Key.edgeSide, AppSettings.Key.edgeLabels, AppSettings.Key.hoverHint,
+        AppSettings.Key.controlStyle, AppSettings.Key.bottomBar, AppSettings.Key.bottomSource, AppSettings.Key.bottomCount,
+        AppSettings.Key.breadcrumb, AppSettings.Key.appSources,
         AppSettings.Key.favorites, AppSettings.Key.excludedApps, AppSettings.Key.recentsLimit,
         "confirmQuit", UpdatePolicy.key, UpdateInterval.valueKey, UpdateInterval.unitKey,
     ]
@@ -52,6 +54,9 @@ final class SettingsSync: ObservableObject {
         "showInDock": false, "showInMenuBar": true, MenuHub.foldKey: true, AppAppearance.key: AppAppearance.system.rawValue,
         AppSettings.Key.clickThrough: true, AppSettings.Key.edgeControls: true, AppSettings.Key.edgeSide: EdgeSide.automatic.rawValue,
         AppSettings.Key.edgeLabels: true, AppSettings.Key.hoverHint: true,
+        AppSettings.Key.controlStyle: ControlStyle.bars.rawValue, AppSettings.Key.bottomBar: true,
+        AppSettings.Key.bottomSource: BarSource.recent.rawValue, AppSettings.Key.bottomCount: 4,
+        AppSettings.Key.breadcrumb: true, AppSettings.Key.appSources: [String: String](),
         AppSettings.Key.favorites: Data(), AppSettings.Key.excludedApps: [String](), AppSettings.Key.recentsLimit: FolderHistory.defaultLimit,
     ]
 

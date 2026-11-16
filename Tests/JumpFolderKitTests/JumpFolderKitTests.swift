@@ -211,3 +211,46 @@ import Testing
         #expect(into == .init(start: .place(.desktop), opens: ["/Users/pat/Cloud/Desktop/Shots"]))
     }
 }
+
+@Suite struct PerAppHistoryTests {
+    func date(_ s: Double) -> Date { Date(timeIntervalSince1970: s) }
+
+    @Test func eachAppHasItsOwnRecents() {
+        var h = FolderHistory()
+        for (i, p) in ["/a", "/b", "/c"].enumerated() { h.record(p, app: "excel", at: date(Double(i))) }
+        for (i, p) in ["/x", "/y", "/z"].enumerated() { h.record(p, app: "word", at: date(Double(10 + i))) }
+        #expect(h.recent(for: "excel", count: 4) == ["/c", "/b", "/a"])
+        #expect(h.recent(for: "word", count: 2) == ["/z", "/y"])
+    }
+
+    @Test func mostUsedCountsUses() {
+        var h = FolderHistory()
+        h.record("/a", app: "excel", at: date(1))
+        h.record("/b", app: "excel", at: date(2))
+        h.record("/a", app: "excel", at: date(3))
+        h.record("/c", app: "excel", at: date(4))
+        #expect(h.mostUsed(for: "excel", count: 3) == ["/a", "/c", "/b"])
+    }
+
+    @Test func newAppFallsBackToAllApps() {
+        var h = FolderHistory()
+        h.record("/a", app: "excel", at: date(1))
+        h.record("/b", app: "word", at: date(2))
+        h.record("/n", app: "new", at: date(3))
+        #expect(h.recent(for: "new", count: 4) == ["/n", "/b", "/a"])
+        #expect(h.recent(for: "unknown", count: 2) == ["/n", "/b"])
+    }
+
+    @Test func oldHistoryStillDecodes() throws {
+        let json = #"{"entries":[{"path":"/a","date":0}],"lastByApp":{"x":"/a"}}"#.data(using: .utf8)!
+        let h = try JSONDecoder().decode(FolderHistory.self, from: json)
+        #expect(h.paths == ["/a"] && h.byApp.isEmpty)
+    }
+
+    @Test func removeDropsFromApps() {
+        var h = FolderHistory()
+        h.record("/a", app: "excel")
+        h.remove("/a")
+        #expect(h.recent(for: "excel", count: 3).isEmpty)
+    }
+}

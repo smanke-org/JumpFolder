@@ -74,7 +74,8 @@ final class EdgePanel {
     /// Shown and placed beside the dialog, or hidden.
     func update() {
         let watcher = DialogWatcher.shared
-        guard AppSettings.shared.edgeControls, let frame = watcher.frame, watcher.dialog != nil,
+        DialogBars.shared.update()
+        guard AppSettings.shared.edgeControls, AppSettings.shared.controlStyle == .strip, let frame = watcher.frame, watcher.dialog != nil,
               frame.width > 50, frame.height > 50 else {
             if panel.isVisible { panel.orderOut(nil) }
             if watcher.dialog == nil { messagePanel.hide() }
@@ -104,6 +105,7 @@ final class EdgePanel {
 
     /// A quick pulse to show a click on a Finder window was taken.
     func flash() {
+        DialogBars.shared.flash()
         guard panel.isVisible, let content = panel.contentView else { return }
         content.alphaValue = 0.4
         NSAnimationContext.runAnimationGroup { context in
@@ -130,6 +132,7 @@ final class EdgePanel {
             FolderMenus.reveal(watcher.currentFolder)
             return
         }
+        if DialogBars.shared.open(button) { return }
         menu(for: button) { [weak self] menu in
             if let self, self.panel.isVisible, let view = self.buttons[button] {
                 let leftSide = self.panel.frame.maxX <= (watcher.frame.map { Self.appKitRect($0).minX } ?? .infinity) + 1

@@ -34,6 +34,12 @@ final class AppSettings {
         static let edgeSide = "edgeSide"
         static let edgeLabels = "edgeLabels"
         static let hoverHint = "hoverHint"
+        static let controlStyle = "controlStyle"
+        static let bottomBar = "bottomBar"
+        static let bottomSource = "bottomSource"
+        static let bottomCount = "bottomCount"
+        static let breadcrumb = "breadcrumb"
+        static let appSources = "appSources"
         static let favorites = "favorites"
         static let excludedApps = "excludedApps"
         static let recentsLimit = "recentsLimit"
@@ -66,6 +72,42 @@ final class AppSettings {
     /// Clicking a Finder window behind a dialog takes the dialog there (Settings › Dialogs).
     var clickThrough: Bool {
         didSet { defaults.set(clickThrough, forKey: Key.clickThrough) }
+    }
+
+    /// Bars above and below the dialog, or the strip on its side (Settings › Dialogs).
+    var controlStyle: ControlStyle {
+        didSet { defaults.set(controlStyle.rawValue, forKey: Key.controlStyle) }
+    }
+
+    /// The bar under the dialog: the folder path and a few folders to jump to.
+    var bottomBar: Bool {
+        didSet { defaults.set(bottomBar, forKey: Key.bottomBar) }
+    }
+
+    /// Which folders the bottom bar offers, unless an app has its own choice.
+    var bottomSource: BarSource {
+        didSet { defaults.set(bottomSource.rawValue, forKey: Key.bottomSource) }
+    }
+
+    var bottomCount: Int {
+        didSet { defaults.set(bottomCount, forKey: Key.bottomCount) }
+    }
+
+    /// The clickable folder path at the start of the bottom bar.
+    var breadcrumb: Bool {
+        didSet { defaults.set(breadcrumb, forKey: Key.breadcrumb) }
+    }
+
+    /// Bundle id → that app's own bottom-bar choice.
+    var appSources: [String: String] {
+        didSet { defaults.set(appSources, forKey: Key.appSources) }
+    }
+
+    static let bottomCountRange = 3...5
+
+    /// The bottom bar's folders for an app: its own choice, or the usual one.
+    func source(for bundleID: String?) -> BarSource {
+        bundleID.flatMap { appSources[$0] }.flatMap(BarSource.init(rawValue:)) ?? bottomSource
     }
 
     /// A ring and a "Jump to" label on the Finder window under the pointer (Settings › Dialogs).
@@ -120,6 +162,12 @@ final class AppSettings {
         shortcuts = Self.loadShortcuts(from: defaults)
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
         hoverHint = defaults.object(forKey: Key.hoverHint) as? Bool ?? true
+        controlStyle = defaults.string(forKey: Key.controlStyle).flatMap(ControlStyle.init(rawValue:)) ?? .bars
+        bottomBar = defaults.object(forKey: Key.bottomBar) as? Bool ?? true
+        bottomSource = defaults.string(forKey: Key.bottomSource).flatMap(BarSource.init(rawValue:)) ?? .recent
+        bottomCount = defaults.object(forKey: Key.bottomCount) as? Int ?? 4
+        breadcrumb = defaults.object(forKey: Key.breadcrumb) as? Bool ?? true
+        appSources = defaults.dictionary(forKey: Key.appSources) as? [String: String] ?? [:]
         edgeControls = defaults.object(forKey: Key.edgeControls) as? Bool ?? true
         edgeSide = defaults.string(forKey: Key.edgeSide).flatMap(EdgeSide.init(rawValue:)) ?? .automatic
         edgeLabels = defaults.object(forKey: Key.edgeLabels) as? Bool ?? true
@@ -160,6 +208,12 @@ final class AppSettings {
         shortcuts = Self.loadShortcuts(from: defaults)
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
         hoverHint = defaults.object(forKey: Key.hoverHint) as? Bool ?? true
+        controlStyle = defaults.string(forKey: Key.controlStyle).flatMap(ControlStyle.init(rawValue:)) ?? .bars
+        bottomBar = defaults.object(forKey: Key.bottomBar) as? Bool ?? true
+        bottomSource = defaults.string(forKey: Key.bottomSource).flatMap(BarSource.init(rawValue:)) ?? .recent
+        bottomCount = defaults.object(forKey: Key.bottomCount) as? Int ?? 4
+        breadcrumb = defaults.object(forKey: Key.breadcrumb) as? Bool ?? true
+        appSources = defaults.dictionary(forKey: Key.appSources) as? [String: String] ?? [:]
         edgeControls = defaults.object(forKey: Key.edgeControls) as? Bool ?? true
         edgeSide = defaults.string(forKey: Key.edgeSide).flatMap(EdgeSide.init(rawValue:)) ?? .automatic
         edgeLabels = defaults.object(forKey: Key.edgeLabels) as? Bool ?? true
@@ -178,5 +232,26 @@ final class AppSettings {
         guard let data = defaults.data(forKey: Key.shortcuts),
               let decoded = try? JSONDecoder().decode([String: HotKey?].self, from: data) else { return [:] }
         return decoded
+    }
+}
+
+/// How JumpFolder's buttons sit around a dialog.
+enum ControlStyle: String, CaseIterable {
+    /// Recent, Favorites, Finder and Reveal above the dialog; folders to jump to below it.
+    case bars
+    /// The column of buttons on the dialog's side.
+    case strip
+}
+
+/// Which folders the bottom bar offers.
+enum BarSource: String, CaseIterable {
+    case recent, mostUsed, favorites
+
+    var title: String {
+        switch self {
+        case .recent: "Recently Used"
+        case .mostUsed: "Most Used"
+        case .favorites: "Favorites"
+        }
     }
 }

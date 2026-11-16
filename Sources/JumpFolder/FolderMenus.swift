@@ -34,7 +34,7 @@ enum FolderMenus {
         return FileManager.default.fileExists(atPath: path, isDirectory: &isFolder) && isFolder.boolValue
     }
 
-    private static func folderItem(_ path: String, title: String? = nil) -> NSMenuItem {
+    static func folderItem(_ path: String, title: String? = nil) -> NSMenuItem {
         let item = NSMenuItem(title: title ?? FileManager.default.displayName(atPath: path),
                               action: #selector(Target.pick(_:)), keyEquivalent: "")
         item.target = target
@@ -52,25 +52,62 @@ enum FolderMenus {
         return item
     }
 
-    /// Recent folders, with `app`'s own last folder on top.
+    /// Recent folders: the app's own first, then every app's.
     static func recentsMenu(for app: FileDialog?) -> NSMenu {
         let menu = NSMenu(title: "Recent Folders")
         menu.autoenablesItems = false
-        let lists = AppSettings.shared.history.menuPaths(for: app?.bundleID, exists: exists)
-        if let last = lists.appLast, let app {
-            menu.addItem(note("Last in \(app.appName)"))
-            menu.addItem(folderItem(last))
-            if !lists.others.isEmpty { menu.addItem(.separator()) }
+        let history = AppSettings.shared.history
+        let own = history.ownRecent(for: app?.bundleID, count: 10, exists: exists)
+        let all = history.paths.filter { !own.contains($0) && exists($0) }
+        let titles = distinctTitles(own + all)
+        if let app, !own.isEmpty {
+            menu.addItem(note("In \(app.appName)"))
+            for path in own { menu.addItem(folderItem(path, title: titles[path])) }
+            if !all.isEmpty {
+                menu.addItem(.separator())
+                menu.addItem(note("All Apps"))
+            }
         }
-        if lists.appLast == nil, lists.others.isEmpty {
+        if own.isEmpty, all.isEmpty {
             menu.addItem(note("No recent folders yet"))
         }
-        for path in lists.others { menu.addItem(folderItem(path)) }
+        for path in all { menu.addItem(folderItem(path, title: titles[path])) }
         menu.addItem(.separator())
         let clear = menu.addItem(withTitle: "Clear Recent Folders", action: #selector(Target.clearRecents), keyEquivalent: "")
         clear.target = target
-        clear.isEnabled = !AppSettings.shared.history.entries.isEmpty
+        clear.isEnabled = !history.entries.isEmpty
         return menu
+    }
+
+    /// Folder names, with the enclosing folder's name added where two share a name
+    /// ("JumpFolder — Sources").
+    static func distinctTitles(_ paths: [String]) -> [String: String] {
+        let names = paths.map { FileManager.default.displayName(atPath: $0) }
+        var counts: [String: Int] = [:]
+        names.forEach { counts[$0, default: 0] += 1 }
+        var titles: [String: String] = [:]
+        for (path, name) in zip(paths, names) {
+            let parent = FileManager.default.displayName(atPath: (path as NSString).deletingLastPathComponent)
+            titles[path] = counts[name, default: 0] > 1 ? "\(name) — \(parent)" : name
+        }
+        return titles
+    }
+
+    /// Everything the bottom bar draws its folders from, for its More button.
+    static func sourceMenu(_ source: BarSource) -> NSMenu {
+        let app = DialogWatcher.shared.dialog
+        switch source {
+        case .favorites: return favoritesMenu(currentFolder: DialogWatcher.shared.currentFolder)
+        case .recent: return recentsMenu(for: app)
+        case .mostUsed:
+            let menu = NSMenu(title: "Most Used Folders")
+            menu.autoenablesItems = false
+            let paths = AppSettings.shared.history.mostUsed(for: app?.bundleID, count: 15, exists: exists)
+            if let app { menu.addItem(note("Most Used in \(app.appName)")) }
+            if paths.isEmpty { menu.addItem(note("No folders yet")) }
+            for path in paths { menu.addItem(folderItem(path)) }
+            return menu
+        }
     }
 
     static func favoritesMenu(currentFolder: String?) -> NSMenu {

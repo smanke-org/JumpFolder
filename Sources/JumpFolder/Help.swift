@@ -78,16 +78,18 @@ enum Help {
             .tip("Turn this off in Settings › Dialogs, or from the menu bar menu (Click Finder Windows to Jump)."),
         ]),
 
-        HelpTopic(id: "edge", title: "Folder Buttons", symbol: "sidebar.left", blocks: [
-            .text("While a dialog is open, a small strip of buttons sits on its edge and moves with it."),
+        HelpTopic(id: "edge", title: "Folder Buttons", symbol: "rectangle.topthird.inset.filled", blocks: [
+            .text("While a dialog is open, JumpFolder puts buttons around it that move with it."),
+            .heading("Above the dialog"),
             .keys([
-                ("Clock", "Recent Folders: the folders dialogs were last in, with this app's last folder first"),
-                ("Star", "Favorite Folders, plus Add to Favorites for the dialog's folder"),
-                ("Window", "Finder Windows: the folder of every open Finder window"),
-                ("Magnifying glass", "Reveal the dialog's folder in Finder"),
+                ("Recent", "Folders this app's dialogs used, then every app's"),
+                ("Favorites", "Your favorite folders, plus Add to Favorites for the dialog's folder"),
+                ("Finder", "The folder of every open Finder window"),
+                ("Reveal", "Show the dialog's folder in Finder"),
             ]),
-            .text("Pick a folder and the dialog goes there. Choose which side the strip sits on, whether its buttons have labels, or turn it off, in Settings › Dialogs. Apps you list under Leave These Apps Alone get no strip."),
-            .tip("Reveal is dimmed when JumpFolder can't tell which folder the dialog shows, such as in an empty folder you went to without JumpFolder."),
+            .heading("Below the dialog"),
+            .text("The dialog's folder path: click a folder in it to go up to it. Then a few folders to jump to, and a chevron for the rest. Choose Recently Used, Most Used or Favorites in Settings › Dialogs, and how many to show. Recently Used and Most Used are kept for each app, so Excel's folders differ from Word's. Until an app has a few folders of its own, other apps' recent folders fill in."),
+            .text("In Per-App Settings, give an app its own choice, or have JumpFolder leave it alone. Prefer the older look? Choose Style › Strip on the side."),
         ]),
 
         HelpTopic(id: "folders", title: "Recent and Favorite Folders", symbol: "star", blocks: [

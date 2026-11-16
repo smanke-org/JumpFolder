@@ -18,7 +18,7 @@ Requires macOS 26 or later. Free.
 ## Features
 
 - **Click a Finder window to jump.** With an Open or Save dialog in front, click any Finder window behind it and the dialog goes to that folder. Finder doesn't come forward, so you keep going in the dialog. Hold ⌥ to bring Finder forward instead.
-- **Folder buttons on the dialog's edge.** A small strip follows the dialog as it moves and resizes, on the left or the right, and hides when the dialog closes. Show a label under each button, or icons only for a narrower strip.
+- **Folder buttons around the dialog.** Above it: Recent, Favorites, Finder and Reveal. Below it: the dialog's folder path, plus a few folders to jump to: each app's recently used or most used folders, or your favorites. Both follow the dialog and hide when it closes. Prefer a strip on the dialog's side? That style is still there.
   - **Recent Folders**, with the app's own last folder first.
   - **Favorite Folders**, with Add to Favorites for the folder the dialog shows.
   - **Finder Windows**: the folder of every open Finder window.

@@ -93,6 +93,11 @@ enum AgentCommands {
                      params: [.init(name: "click-through", kind: .boolean, help: "true or false: clicking a Finder window takes the dialog there"),
                               .init(name: "hover-hint", kind: .boolean, help: "true or false: outline and label the Finder window under the pointer"),
                               .init(name: "edge-controls", kind: .boolean, help: "true or false: folder buttons beside dialogs"),
+                              .init(name: "style", help: "bars or strip: pills above and a bar below the dialog, or a strip on its side"),
+                              .init(name: "bottom-bar", kind: .boolean, help: "true or false: the bar below the dialog"),
+                              .init(name: "bottom-source", help: "recent, mostUsed or favorites: the folders in the bar below"),
+                              .init(name: "bottom-count", kind: .integer, help: "how many folders the bar below shows, 3–5"),
+                              .init(name: "breadcrumb", kind: .boolean, help: "true or false: the folder path in the bar below"),
                               .init(name: "edge-side", help: EdgeSide.allCases.map(\.rawValue).joined(separator: ", ")),
                               .init(name: "edge-labels", kind: .boolean, help: "true or false: names under the folder buttons"),
                               .init(name: "recents-limit", kind: .integer, help: "how many recent folders to keep, \(FolderHistory.limitRange.lowerBound)–\(FolderHistory.limitRange.upperBound)"),
@@ -103,6 +108,23 @@ enum AgentCommands {
             let settings = AppSettings.shared
             let click = try args.bool("click-through"), edge = try args.bool("edge-controls"), labels = try args.bool("edge-labels"), hint = try args.bool("hover-hint")
             let quit = try args.bool("ask-before-quitting"), dock = try args.bool("show-in-dock"), menuBar = try args.bool("show-in-menu-bar")
+            let bottomBar = try args.bool("bottom-bar"), breadcrumb = try args.bool("breadcrumb")
+            var style: ControlStyle?
+            if let name = args.string("style") {
+                guard let value = ControlStyle(rawValue: name.lowercased()) else { throw AgentError.usage("--style must be bars or strip") }
+                style = value
+            }
+            var source: BarSource?
+            if let name = args.string("bottom-source") {
+                guard let value = BarSource(rawValue: name) else { throw AgentError.usage("--bottom-source must be recent, mostUsed or favorites") }
+                source = value
+            }
+            var count: Int?
+            if args.string("bottom-count") != nil {
+                let value = try args.int("bottom-count", default: settings.bottomCount)
+                guard AppSettings.bottomCountRange.contains(value) else { throw AgentError.usage("--bottom-count must be 3–5") }
+                count = value
+            }
             var side: EdgeSide?
             if let name = args.string("edge-side") {
                 guard let value = EdgeSide(rawValue: name.lowercased()) else {
@@ -118,11 +140,16 @@ enum AgentCommands {
                 }
                 limit = value
             }
-            guard click != nil || hint != nil || edge != nil || labels != nil || side != nil || limit != nil || quit != nil || dock != nil || menuBar != nil else {
+            guard style != nil || bottomBar != nil || breadcrumb != nil || source != nil || count != nil || click != nil || hint != nil || edge != nil || labels != nil || side != nil || limit != nil || quit != nil || dock != nil || menuBar != nil else {
                 throw AgentError.usage("give at least one option; see `jumpfolder help settings set`")
             }
             if let click { settings.clickThrough = click }
             if let hint { settings.hoverHint = hint }
+            if let style { settings.controlStyle = style }
+            if let bottomBar { settings.bottomBar = bottomBar }
+            if let breadcrumb { settings.breadcrumb = breadcrumb }
+            if let source { settings.bottomSource = source }
+            if let count { settings.bottomCount = count }
             if let edge { settings.edgeControls = edge }
             if let side { settings.edgeSide = side }
             if let labels { settings.edgeLabels = labels }
@@ -165,6 +192,8 @@ enum AgentCommands {
         let settings = AppSettings.shared
         return ["clickThrough": settings.clickThrough, "hoverHint": settings.hoverHint, "edgeControls": settings.edgeControls, "edgeSide": settings.edgeSide.rawValue,
                 "edgeLabels": settings.edgeLabels,
+                "style": settings.controlStyle.rawValue, "bottomBar": settings.bottomBar, "bottomSource": settings.bottomSource.rawValue,
+                "bottomCount": settings.bottomCount, "breadcrumb": settings.breadcrumb, "appSources": settings.appSources,
                 "excludedApps": settings.excludedApps, "recentsLimit": settings.recentsLimit,
                 "askBeforeQuitting": settings.confirmQuit, "showInDock": settings.showInDock, "showInMenuBar": settings.showInMenuBar,
                 "shortcuts": ShortcutCatalog.all.map { item -> JSONObject in
