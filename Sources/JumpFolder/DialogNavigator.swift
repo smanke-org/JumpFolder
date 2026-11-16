@@ -15,6 +15,8 @@ enum DialogNavigator {
     static let eventTag: Int64 = 0x4A46_4C44
 
     private static var busy = false
+    /// Moving a dialog right now.
+    static var isBusy: Bool { busy }
 
     /// Goes to `path` in the dialog in front. Calls back with whether it got there.
     static func go(to path: String, done: (@MainActor (Bool) -> Void)? = nil) {

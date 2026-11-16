@@ -73,6 +73,7 @@ enum Help {
                 ("Click a Finder window", "Take the dialog to that folder"),
                 ("⌥-click a Finder window", "Bring Finder forward as usual"),
             ]),
+            .text("When you point at a Finder window JumpFolder can use, it gets a colored outline and a “Jump to” label with its folder's name follows the pointer. Both go away when you click or move off the window. Turn highlighting off in Settings › Dialogs."),
             .text("Clicks on the dialog itself, on other apps' windows and on the desktop work as usual. Windows showing a search or Recents, which aren't folders, can't be used; you hear an alert sound instead."),
             .tip("Turn this off in Settings › Dialogs, or from the menu bar menu (Click Finder Windows to Jump)."),
         ]),

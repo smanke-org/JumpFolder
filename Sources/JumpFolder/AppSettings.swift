@@ -33,6 +33,7 @@ final class AppSettings {
         static let edgeControls = "edgeControls"
         static let edgeSide = "edgeSide"
         static let edgeLabels = "edgeLabels"
+        static let hoverHint = "hoverHint"
         static let favorites = "favorites"
         static let excludedApps = "excludedApps"
         static let recentsLimit = "recentsLimit"
@@ -65,6 +66,11 @@ final class AppSettings {
     /// Clicking a Finder window behind a dialog takes the dialog there (Settings › Dialogs).
     var clickThrough: Bool {
         didSet { defaults.set(clickThrough, forKey: Key.clickThrough) }
+    }
+
+    /// A ring and a "Jump to" label on the Finder window under the pointer (Settings › Dialogs).
+    var hoverHint: Bool {
+        didSet { defaults.set(hoverHint, forKey: Key.hoverHint) }
     }
 
     /// The strip of folder buttons beside every Open and Save dialog (Settings › Dialogs).
@@ -113,6 +119,7 @@ final class AppSettings {
         showInMenuBar = AppPresence.showInMenuBar
         shortcuts = Self.loadShortcuts(from: defaults)
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
+        hoverHint = defaults.object(forKey: Key.hoverHint) as? Bool ?? true
         edgeControls = defaults.object(forKey: Key.edgeControls) as? Bool ?? true
         edgeSide = defaults.string(forKey: Key.edgeSide).flatMap(EdgeSide.init(rawValue:)) ?? .automatic
         edgeLabels = defaults.object(forKey: Key.edgeLabels) as? Bool ?? true
@@ -152,6 +159,7 @@ final class AppSettings {
         confirmQuit = defaults.object(forKey: Key.confirmQuit) as? Bool ?? true
         shortcuts = Self.loadShortcuts(from: defaults)
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
+        hoverHint = defaults.object(forKey: Key.hoverHint) as? Bool ?? true
         edgeControls = defaults.object(forKey: Key.edgeControls) as? Bool ?? true
         edgeSide = defaults.string(forKey: Key.edgeSide).flatMap(EdgeSide.init(rawValue:)) ?? .automatic
         edgeLabels = defaults.object(forKey: Key.edgeLabels) as? Bool ?? true

@@ -11,7 +11,9 @@ struct DialogSettings: View {
         Form {
             Section {
                 Toggle("Click a Finder window to take the dialog there", isOn: $settings.clickThrough)
-                Caption("While an Open or Save dialog is in front, clicking a Finder window behind it takes the dialog to that window's folder, and Finder stays where it is. Hold Option (⌥) while clicking to bring Finder forward instead.")
+                Toggle("Highlight the Finder window under the pointer", isOn: $settings.hoverHint)
+                    .disabled(!settings.clickThrough)
+                Caption("While an Open or Save dialog is in front, clicking a Finder window behind it takes the dialog to that window's folder, and Finder stays where it is. Hold Option (⌥) while clicking to bring Finder forward instead. With highlighting on, the window you point at gets a colored outline and a “Jump to” label.")
             }
             Section {
                 Toggle("Show folder buttons beside dialogs", isOn: $settings.edgeControls)
@@ -46,6 +48,7 @@ struct DialogSettings: View {
         }
         .formStyle(.grouped)
         .onChange(of: settings.clickThrough) { DialogWatcher.shared.settingsChanged() }
+        .onChange(of: settings.hoverHint) { HoverHint.shared.update() }
         .onChange(of: settings.edgeControls) { DialogWatcher.shared.settingsChanged() }
         .onChange(of: settings.edgeSide) { DialogWatcher.shared.settingsChanged() }
         .onChange(of: settings.edgeLabels) { DialogWatcher.shared.settingsChanged() }

@@ -65,6 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AgentSocket.listen { AgentRouter.handle($0) }
         listenForDebugCommands()
         EdgePanel.shared.start()
+        HoverHint.shared.start()
         DialogWatcher.shared.start()
         if AX.isTrusted { ClickThrough.shared.start() }
         HotKeyCenter.shared.perform = { id in Self.perform(shortcut: id) }

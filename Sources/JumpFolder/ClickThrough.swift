@@ -66,6 +66,7 @@ final class ClickThrough: @unchecked Sendable {
             return Unmanaged.passUnretained(event)
         case .leftMouseDown:
             swallowing = false
+            DispatchQueue.main.async { MainActor.assumeIsolated { HoverHint.shared.clicked() } }
             guard let target = finderWindowHit(by: event) else { return Unmanaged.passUnretained(event) }
             swallowing = true
             DispatchQueue.main.async {
@@ -86,8 +87,11 @@ final class ClickThrough: @unchecked Sendable {
         let point = event.location
         // A click on the dialog (or inside its frame) is the dialog's.
         if state.frame.contains(point) { return nil }
-        guard let hit = ClickTarget.hit(point, in: Self.windowList(), displays: Self.displayFrames()),
-              hit.ownerName == "Finder", hit.ownerPID != ownPID, hit.layer == 0 else { return nil }
+        // JumpFolder's own windows (the hover ring sits right on top of the Finder window)
+        // never take clicks, so look past them.
+        let windows = Self.windowList().filter { $0.ownerPID != ownPID }
+        guard let hit = ClickTarget.hit(point, in: windows, displays: Self.displayFrames()),
+              hit.ownerName == "Finder", hit.layer == 0 else { return nil }
         return hit.bounds
     }
 

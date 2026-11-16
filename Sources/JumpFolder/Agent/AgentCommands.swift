@@ -91,6 +91,7 @@ enum AgentCommands {
         },
         AgentCommand(name: "settings set", summary: "Change JumpFolder's settings. Only the options you give change.",
                      params: [.init(name: "click-through", kind: .boolean, help: "true or false: clicking a Finder window takes the dialog there"),
+                              .init(name: "hover-hint", kind: .boolean, help: "true or false: outline and label the Finder window under the pointer"),
                               .init(name: "edge-controls", kind: .boolean, help: "true or false: folder buttons beside dialogs"),
                               .init(name: "edge-side", help: EdgeSide.allCases.map(\.rawValue).joined(separator: ", ")),
                               .init(name: "edge-labels", kind: .boolean, help: "true or false: names under the folder buttons"),
@@ -100,7 +101,7 @@ enum AgentCommands {
                               .init(name: "show-in-menu-bar", kind: .boolean, help: "true or false")],
                      example: "jumpfolder settings set --edge-side right --json") { args in
             let settings = AppSettings.shared
-            let click = try args.bool("click-through"), edge = try args.bool("edge-controls"), labels = try args.bool("edge-labels")
+            let click = try args.bool("click-through"), edge = try args.bool("edge-controls"), labels = try args.bool("edge-labels"), hint = try args.bool("hover-hint")
             let quit = try args.bool("ask-before-quitting"), dock = try args.bool("show-in-dock"), menuBar = try args.bool("show-in-menu-bar")
             var side: EdgeSide?
             if let name = args.string("edge-side") {
@@ -117,10 +118,11 @@ enum AgentCommands {
                 }
                 limit = value
             }
-            guard click != nil || edge != nil || labels != nil || side != nil || limit != nil || quit != nil || dock != nil || menuBar != nil else {
+            guard click != nil || hint != nil || edge != nil || labels != nil || side != nil || limit != nil || quit != nil || dock != nil || menuBar != nil else {
                 throw AgentError.usage("give at least one option; see `jumpfolder help settings set`")
             }
             if let click { settings.clickThrough = click }
+            if let hint { settings.hoverHint = hint }
             if let edge { settings.edgeControls = edge }
             if let side { settings.edgeSide = side }
             if let labels { settings.edgeLabels = labels }
@@ -161,7 +163,7 @@ enum AgentCommands {
     @MainActor
     private static func settingsJSON() -> JSONObject {
         let settings = AppSettings.shared
-        return ["clickThrough": settings.clickThrough, "edgeControls": settings.edgeControls, "edgeSide": settings.edgeSide.rawValue,
+        return ["clickThrough": settings.clickThrough, "hoverHint": settings.hoverHint, "edgeControls": settings.edgeControls, "edgeSide": settings.edgeSide.rawValue,
                 "edgeLabels": settings.edgeLabels,
                 "excludedApps": settings.excludedApps, "recentsLimit": settings.recentsLimit,
                 "askBeforeQuitting": settings.confirmQuit, "showInDock": settings.showInDock, "showInMenuBar": settings.showInMenuBar,

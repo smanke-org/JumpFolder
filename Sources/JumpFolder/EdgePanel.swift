@@ -65,7 +65,10 @@ final class EdgePanel {
     private lazy var messagePanel = MessagePanel()
 
     func start() {
-        DialogWatcher.shared.onChange = { [weak self] in self?.update() }
+        DialogWatcher.shared.onChange = { [weak self] in
+            self?.update()
+            HoverHint.shared.dialogChanged()
+        }
     }
 
     /// Shown and placed beside the dialog, or hidden.
