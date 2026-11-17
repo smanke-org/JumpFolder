@@ -137,8 +137,11 @@ final class HoverHint {
         let own = ProcessInfo.processInfo.processIdentifier
         let all = windowList()
         let displays = ClickThrough.displayFrames()
-        // JumpFolder's own buttons and menus keep the pointer.
-        if let top = ClickTarget.hit(point, in: all, displays: displays), top.ownerPID == own, top.layer != 0 { return nil }
+        // JumpFolder's own buttons and menus keep the pointer, but not the hint's own ring and
+        // pill: the pointer walks onto the pill when it moves down and right.
+        let hint = [ring.windowNumber, pill.windowNumber]
+        if let top = ClickTarget.hit(point, in: all.filter { !hint.contains($0.number) }, displays: displays),
+           top.ownerPID == own, top.layer != 0 { return nil }
         refreshFinderWindows()
         let onScreen = all.filter { $0.ownerName == "Finder" && $0.layer == 0 }.map(\.bounds)
         let dialogDisplay = displays.first { $0.contains(CGPoint(x: frame.midX, y: frame.midY)) }
@@ -226,6 +229,8 @@ private final class RingPanel {
     static let windowCornerRadius: CGFloat = 24
     private lazy var panel = make()
     private let shape = CAShapeLayer()
+
+    var windowNumber: Int { panel.windowNumber }
 
     func show(around bounds: CGRect, above windowNumber: Int, dashed: Bool, animate: Bool) {
         place(around: bounds, dashed: dashed)
@@ -321,6 +326,8 @@ private final class PillPanel {
     private var name = ""
 
     static let offset = CGSize(width: 14, height: 20)
+
+    var windowNumber: Int { panel.windowNumber }
 
     func show(name: String, at point: CGPoint, animate: Bool) {
         _ = panel
