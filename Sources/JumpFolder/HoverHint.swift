@@ -127,7 +127,7 @@ final class HoverHint {
 
     /// A Finder window hidden at the pointer (behind a full-screen app, on another Space, or
     /// under other windows), outside the dialog, that the X-ray settings allow.
-    private func xrayUnderPointer() -> (bounds: CGRect, path: String, dialogNumber: Int?)? {
+    private func xrayUnderPointer() -> (bounds: CGRect, path: String, dialog: CGRect)? {
         let settings = AppSettings.shared
         let watcher = DialogWatcher.shared
         guard settings.clickThrough, settings.xrayOptions.any, let dialog = watcher.dialog, let frame = watcher.frame,
@@ -150,15 +150,12 @@ final class HoverHint {
         let finder = finderWindows.filter { !$0.path.isEmpty }.map { (bounds: $0.bounds, value: $0.path) }
         guard let found = XRay.target(at: point, finder: finder, onScreen: onScreen, hostFullScreen: hostFullScreen,
                                       dialogDisplay: dialogDisplay, options: settings.xrayOptions) else { return nil }
-        // The ring goes right under the dialog, so the dialog still covers it.
-        let dialogNumber = all.first { $0.ownerPID == dialog.pid && $0.layer == 0
-            && abs($0.bounds.minX - frame.minX) < 3 && abs($0.bounds.minY - frame.minY) < 3 }?.number
-        return (found.bounds, found.value, dialogNumber)
+        return (found.bounds, found.value, frame)
     }
 
-    private func showXRay(_ xray: (bounds: CGRect, path: String, dialogNumber: Int?)) {
+    private func showXRay(_ xray: (bounds: CGRect, path: String, dialog: CGRect)) {
         XRayTarget.set((xray.bounds, xray.path))
-        ring.show(around: xray.bounds, below: xray.dialogNumber, dashed: true, animate: !showing || !showingXRay)
+        ring.show(around: xray.bounds, except: xray.dialog, dashed: true, animate: !showing || !showingXRay)
         pill.show(name: FileManager.default.displayName(atPath: xray.path), at: Self.pointer(), animate: !showing)
         showing = true
         showingXRay = true
@@ -234,23 +231,49 @@ private final class RingPanel {
 
     func show(around bounds: CGRect, above windowNumber: Int, dashed: Bool, animate: Bool) {
         place(around: bounds, dashed: dashed)
+        cutOut(nil)
         panel.level = .normal
         panel.order(.above, relativeTo: windowNumber)
         if animate { fade(in: true) }
     }
 
     /// X-ray: the Finder window is hidden, so the ring goes over everything but the dialog
-    /// (right under it), with a faint fill so the window's place reads as a target.
-    func show(around bounds: CGRect, below dialogNumber: Int?, dashed: Bool, animate: Bool) {
+    /// (cut out of it), with a faint fill so the window's place reads as a target.
+    ///
+    /// Stacking it just under the dialog doesn't work everywhere: in apps whose dialog is
+    /// attached to their main window (Claude, other Electron apps) "under the dialog" is also
+    /// under that main window, out of sight. So it floats over everything, with the dialog's
+    /// area cut out so the dialog still looks like it covers it.
+    func show(around bounds: CGRect, except dialog: CGRect, dashed: Bool, animate: Bool) {
         place(around: bounds, dashed: dashed)
-        if let dialogNumber {
-            panel.level = .normal
-            panel.order(.below, relativeTo: dialogNumber)
-        } else {
-            panel.level = .floating
-            panel.orderFrontRegardless()
-        }
+        cutOut(dialog)
+        panel.level = .floating
+        panel.orderFrontRegardless()
         if animate { fade(in: true) }
+    }
+
+    /// The dialog's corners are rounded too; a smaller radius than theirs leaves no outline
+    /// showing over them.
+    static let dialogCornerRadius: CGFloat = 12
+
+    /// Hides the part of the ring inside `rect` (global top-left), or nothing for nil.
+    private func cutOut(_ rect: CGRect?) {
+        guard let view = panel.contentView else { return }
+        guard let rect else {
+            view.layer?.mask = nil
+            return
+        }
+        let screen = EdgePanel.appKitRect(rect)
+        let local = screen.offsetBy(dx: -panel.frame.minX, dy: -panel.frame.minY)
+        let mask = (view.layer?.mask as? CAShapeLayer) ?? CAShapeLayer()
+        let path = CGMutablePath()
+        path.addRect(view.bounds)
+        let radius = Self.dialogCornerRadius
+        path.addRoundedRect(in: local, cornerWidth: radius, cornerHeight: radius)
+        mask.frame = view.bounds
+        mask.fillRule = .evenOdd
+        mask.path = path
+        view.layer?.mask = mask
     }
 
     private func place(around bounds: CGRect, dashed: Bool) {
