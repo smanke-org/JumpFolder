@@ -92,6 +92,9 @@ enum AgentCommands {
         AgentCommand(name: "settings set", summary: "Change JumpFolder's settings. Only the options you give change.",
                      params: [.init(name: "click-through", kind: .boolean, help: "true or false: clicking a Finder window takes the dialog there"),
                               .init(name: "hover-hint", kind: .boolean, help: "true or false: outline and label the Finder window under the pointer"),
+                              .init(name: "xray-fullscreen", kind: .boolean, help: "true or false: x-ray Finder windows behind a full-screen app"),
+                              .init(name: "xray-spaces", kind: .boolean, help: "true or false: x-ray Finder windows on other Spaces and displays"),
+                              .init(name: "xray-covered", kind: .boolean, help: "true or false: x-ray Finder windows covered by other windows"),
                               .init(name: "edge-controls", kind: .boolean, help: "true or false: folder buttons beside dialogs"),
                               .init(name: "style", help: "bars or strip: pills above and a bar below the dialog, or a strip on its side"),
                               .init(name: "bottom-bar", kind: .boolean, help: "true or false: the bar below the dialog"),
@@ -107,6 +110,7 @@ enum AgentCommands {
                      example: "jumpfolder settings set --edge-side right --json") { args in
             let settings = AppSettings.shared
             let click = try args.bool("click-through"), edge = try args.bool("edge-controls"), labels = try args.bool("edge-labels"), hint = try args.bool("hover-hint")
+            let xrayFull = try args.bool("xray-fullscreen"), xraySpaces = try args.bool("xray-spaces"), xrayCovered = try args.bool("xray-covered")
             let quit = try args.bool("ask-before-quitting"), dock = try args.bool("show-in-dock"), menuBar = try args.bool("show-in-menu-bar")
             let bottomBar = try args.bool("bottom-bar"), breadcrumb = try args.bool("breadcrumb")
             var style: ControlStyle?
@@ -140,11 +144,14 @@ enum AgentCommands {
                 }
                 limit = value
             }
-            guard style != nil || bottomBar != nil || breadcrumb != nil || source != nil || count != nil || click != nil || hint != nil || edge != nil || labels != nil || side != nil || limit != nil || quit != nil || dock != nil || menuBar != nil else {
+            guard style != nil || bottomBar != nil || breadcrumb != nil || source != nil || count != nil || click != nil || hint != nil || xrayFull != nil || xraySpaces != nil || xrayCovered != nil || edge != nil || labels != nil || side != nil || limit != nil || quit != nil || dock != nil || menuBar != nil else {
                 throw AgentError.usage("give at least one option; see `jumpfolder help settings set`")
             }
             if let click { settings.clickThrough = click }
             if let hint { settings.hoverHint = hint }
+            if let xrayFull { settings.xrayFullScreen = xrayFull }
+            if let xraySpaces { settings.xraySpaces = xraySpaces }
+            if let xrayCovered { settings.xrayCovered = xrayCovered }
             if let style { settings.controlStyle = style }
             if let bottomBar { settings.bottomBar = bottomBar }
             if let breadcrumb { settings.breadcrumb = breadcrumb }
@@ -190,7 +197,8 @@ enum AgentCommands {
     @MainActor
     private static func settingsJSON() -> JSONObject {
         let settings = AppSettings.shared
-        return ["clickThrough": settings.clickThrough, "hoverHint": settings.hoverHint, "edgeControls": settings.edgeControls, "edgeSide": settings.edgeSide.rawValue,
+        return ["clickThrough": settings.clickThrough, "hoverHint": settings.hoverHint,
+                "xrayFullScreen": settings.xrayFullScreen, "xraySpaces": settings.xraySpaces, "xrayCovered": settings.xrayCovered, "edgeControls": settings.edgeControls, "edgeSide": settings.edgeSide.rawValue,
                 "edgeLabels": settings.edgeLabels,
                 "style": settings.controlStyle.rawValue, "bottomBar": settings.bottomBar, "bottomSource": settings.bottomSource.rawValue,
                 "bottomCount": settings.bottomCount, "breadcrumb": settings.breadcrumb, "appSources": settings.appSources,

@@ -66,6 +66,18 @@ final class ClickThrough: @unchecked Sendable {
             return Unmanaged.passUnretained(event)
         case .leftMouseDown:
             swallowing = false
+            if let path = xrayHit(by: event) {
+                swallowing = true
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        HoverHint.shared.clicked()
+                        Diagnostics.note("click on x-ray Finder window: \(path)")
+                        EdgePanel.shared.flash()
+                        DialogNavigator.go(to: path)
+                    }
+                }
+                return nil
+            }
             DispatchQueue.main.async { MainActor.assumeIsolated { HoverHint.shared.clicked() } }
             guard let target = finderWindowHit(by: event) else { return Unmanaged.passUnretained(event) }
             swallowing = true
@@ -97,6 +109,15 @@ final class ClickThrough: @unchecked Sendable {
         guard let hit = ClickTarget.hit(point, in: windows, displays: displays),
               hit.ownerName == "Finder", hit.layer == 0 else { return nil }
         return hit.bounds
+    }
+
+    /// The folder of the hidden Finder window the x-ray outline shows under this click.
+    private func xrayHit(by event: CGEvent) -> String? {
+        if event.flags.contains(.maskAlternate) { return nil }
+        let state = DialogWatcher.snapshot.current
+        guard state.clickThrough, state.pid != 0, !state.frame.contains(event.location),
+              let target = XRayTarget.current(), target.bounds.contains(event.location) else { return nil }
+        return target.path
     }
 
     /// Every display's frame in global top-left coordinates (CoreGraphics', safe off the main thread).

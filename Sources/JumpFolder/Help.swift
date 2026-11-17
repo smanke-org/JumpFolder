@@ -74,7 +74,10 @@ enum Help {
                 ("⌥-click a Finder window", "Bring Finder forward as usual"),
             ]),
             .text("When you point at a Finder window JumpFolder can use, it gets a colored outline and a “Jump to” label with its folder's name follows the pointer. Both go away when you click or move off the window. Turn highlighting off in Settings › Dialogs."),
-            .text("Clicks on the dialog itself, on other apps' windows and on the desktop work as usual. Windows showing a search or Recents, which aren't folders, can't be used; you hear an alert sound instead."),
+            .heading("Hidden Finder windows (x-ray)"),
+            .text("When the app with the dialog is full screen, or a Finder window is on another Space or under other windows, point where that window sits, outside the dialog. A dashed outline and a “Jump to” label appear; click there to take the dialog to its folder. Nothing shows until you point at one."),
+            .text("Choose which hidden windows count in Settings › Dialogs › X-ray hidden Finder windows: behind full-screen apps, on other Spaces and displays, and behind other windows. All three are on at first."),
+            .text("Clicks on the dialog itself, on other apps' windows and on the desktop work as usual, except where an x-ray outline is showing. Windows showing a search or Recents, which aren't folders, can't be used; you hear an alert sound instead."),
             .tip("Turn this off in Settings › Dialogs, or from the menu bar menu (Click Finder Windows to Jump)."),
         ]),
 

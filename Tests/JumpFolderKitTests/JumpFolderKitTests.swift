@@ -267,3 +267,32 @@ import Testing
         #expect(h.recent(for: "excel", count: 3).isEmpty)
     }
 }
+
+@Suite struct XRayTests {
+    let display = CGRect(x: 0, y: 0, width: 1440, height: 900)
+    let a = CGRect(x: 100, y: 100, width: 600, height: 400)
+    let b = CGRect(x: 300, y: 200, width: 600, height: 400)
+
+    @Test func offScreenBehindFullScreenApp() {
+        #expect(XRay.kind(of: a, onScreen: [], hostFullScreen: true, dialogDisplay: display) == .behindFullScreen)
+        #expect(XRay.kind(of: a, onScreen: [], hostFullScreen: false, dialogDisplay: display) == .otherSpace)
+        #expect(XRay.kind(of: a, onScreen: [a], hostFullScreen: true, dialogDisplay: display) == .covered)
+    }
+
+    @Test func frontMostAllowedWindowWins() {
+        let finder = [(bounds: a, value: "A"), (bounds: b, value: "B")]
+        let point = CGPoint(x: 400, y: 300)
+        #expect(XRay.target(at: point, finder: finder, onScreen: [], hostFullScreen: true, dialogDisplay: display,
+                            options: .init())?.value == "A")
+        // A is on screen (covered), B is off screen: with covered windows off, B is next.
+        #expect(XRay.target(at: point, finder: finder, onScreen: [a], hostFullScreen: true, dialogDisplay: display,
+                            options: .init(covered: false))?.value == "B")
+        #expect(XRay.target(at: point, finder: finder, onScreen: [], hostFullScreen: true, dialogDisplay: display,
+                            options: .init(behindFullScreen: false)) == nil)
+    }
+
+    @Test func fullScreenWindowFillsItsDisplay() {
+        #expect(XRay.fillsDisplay(display, displays: [display]) == display)
+        #expect(XRay.fillsDisplay(a, displays: [display]) == nil)
+    }
+}

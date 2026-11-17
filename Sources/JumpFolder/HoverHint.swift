@@ -26,6 +26,9 @@ final class HoverHint {
     private var asking = false
 
     private var windowsCache: (date: Date, list: [ClickTarget.Window])?
+    /// The hint shows a hidden Finder window (x-ray) rather than a visible one.
+    private var showingXRay = false
+    private var lastFinderAsk = Date.distantPast
 
     func start() {
         guard monitor == nil else { return }
@@ -53,9 +56,14 @@ final class HoverHint {
 
     func update() {
         guard let hit = targetUnderPointer() else {
-            hide()
+            if let xray = xrayUnderPointer() {
+                showXRay(xray)
+            } else {
+                hide()
+            }
             return
         }
+        XRayTarget.set(nil)
         let point = Self.pointer()
         if target?.number != hit.number || target?.bounds != hit.bounds {
             target = (hit.number, hit.bounds)
@@ -67,7 +75,8 @@ final class HoverHint {
             if showing { hide(keepTarget: true) }
             return
         }
-        ring.show(around: hit.bounds, above: hit.number, animate: !showing)
+        ring.show(around: hit.bounds, above: hit.number, dashed: false, animate: !showing || showingXRay)
+        showingXRay = false
         pill.show(name: FileManager.default.displayName(atPath: folder), at: point, animate: !showing)
         showing = true
         startRefreshing()
@@ -76,6 +85,8 @@ final class HoverHint {
     func hide() { hide(keepTarget: false) }
 
     private func hide(keepTarget: Bool) {
+        XRayTarget.set(nil)
+        showingXRay = false
         if !keepTarget {
             target = nil
             folder = nil
@@ -110,6 +121,59 @@ final class HoverHint {
         guard let hit = ClickTarget.hit(point, in: windows, displays: ClickThrough.displayFrames()),
               hit.ownerName == "Finder", hit.layer == 0 else { return nil }
         return hit
+    }
+
+    // MARK: - X-ray: Finder windows the person can't see
+
+    /// A Finder window hidden at the pointer (behind a full-screen app, on another Space, or
+    /// under other windows), outside the dialog, that the X-ray settings allow.
+    private func xrayUnderPointer() -> (bounds: CGRect, path: String, dialogNumber: Int?)? {
+        let settings = AppSettings.shared
+        let watcher = DialogWatcher.shared
+        guard settings.clickThrough, settings.xrayOptions.any, let dialog = watcher.dialog, let frame = watcher.frame,
+              !DialogNavigator.isBusy, !NSEvent.modifierFlags.contains(.option) else { return nil }
+        let point = Self.pointer()
+        if frame.contains(point) { return nil }
+        let own = ProcessInfo.processInfo.processIdentifier
+        let all = windowList()
+        let displays = ClickThrough.displayFrames()
+        // JumpFolder's own buttons and menus keep the pointer.
+        if let top = ClickTarget.hit(point, in: all, displays: displays), top.ownerPID == own, top.layer != 0 { return nil }
+        refreshFinderWindows()
+        let onScreen = all.filter { $0.ownerName == "Finder" && $0.layer == 0 }.map(\.bounds)
+        let dialogDisplay = displays.first { $0.contains(CGPoint(x: frame.midX, y: frame.midY)) }
+        let hostFullScreen = all.contains { $0.ownerPID == dialog.pid && $0.layer == 0
+            && XRay.fillsDisplay($0.bounds, displays: displays) == dialogDisplay && dialogDisplay != nil }
+        let finder = finderWindows.filter { !$0.path.isEmpty }.map { (bounds: $0.bounds, value: $0.path) }
+        guard let found = XRay.target(at: point, finder: finder, onScreen: onScreen, hostFullScreen: hostFullScreen,
+                                      dialogDisplay: dialogDisplay, options: settings.xrayOptions) else { return nil }
+        // The ring goes right under the dialog, so the dialog still covers it.
+        let dialogNumber = all.first { $0.ownerPID == dialog.pid && $0.layer == 0
+            && abs($0.bounds.minX - frame.minX) < 3 && abs($0.bounds.minY - frame.minY) < 3 }?.number
+        return (found.bounds, found.value, dialogNumber)
+    }
+
+    private func showXRay(_ xray: (bounds: CGRect, path: String, dialogNumber: Int?)) {
+        XRayTarget.set((xray.bounds, xray.path))
+        ring.show(around: xray.bounds, below: xray.dialogNumber, dashed: true, animate: !showing || !showingXRay)
+        pill.show(name: FileManager.default.displayName(atPath: xray.path), at: Self.pointer(), animate: !showing)
+        showing = true
+        showingXRay = true
+        startRefreshing()
+    }
+
+    /// Hidden windows can't be seen opening, moving or closing: ask Finder again every couple
+    /// of seconds while the pointer is out looking for one.
+    private func refreshFinderWindows() {
+        guard !asking, Date().timeIntervalSince(lastFinderAsk) > 2 else { return }
+        lastFinderAsk = Date()
+        asking = true
+        FinderWindows.list { [weak self] windows, _ in
+            guard let self else { return }
+            self.asking = false
+            self.askedFinder = true
+            self.finderWindows = windows
+        }
     }
 
     /// The window list changes slowly next to the pointer; don't ask for it on every move.
@@ -163,7 +227,28 @@ private final class RingPanel {
     private lazy var panel = make()
     private let shape = CAShapeLayer()
 
-    func show(around bounds: CGRect, above windowNumber: Int, animate: Bool) {
+    func show(around bounds: CGRect, above windowNumber: Int, dashed: Bool, animate: Bool) {
+        place(around: bounds, dashed: dashed)
+        panel.level = .normal
+        panel.order(.above, relativeTo: windowNumber)
+        if animate { fade(in: true) }
+    }
+
+    /// X-ray: the Finder window is hidden, so the ring goes over everything but the dialog
+    /// (right under it), with a faint fill so the window's place reads as a target.
+    func show(around bounds: CGRect, below dialogNumber: Int?, dashed: Bool, animate: Bool) {
+        place(around: bounds, dashed: dashed)
+        if let dialogNumber {
+            panel.level = .normal
+            panel.order(.below, relativeTo: dialogNumber)
+        } else {
+            panel.level = .floating
+            panel.orderFrontRegardless()
+        }
+        if animate { fade(in: true) }
+    }
+
+    private func place(around bounds: CGRect, dashed: Bool) {
         let width = HoverHint.ringWidth
         let frame = EdgePanel.appKitRect(bounds.insetBy(dx: -width, dy: -width))
         if panel.frame != frame {
@@ -171,8 +256,8 @@ private final class RingPanel {
             layout()
         }
         shape.strokeColor = NSColor.controlAccentColor.cgColor
-        panel.order(.above, relativeTo: windowNumber)
-        if animate { fade(in: true) }
+        shape.lineDashPattern = dashed ? [10, 6] : nil
+        shape.fillColor = dashed ? NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor : nil
     }
 
     func fadeOut() { fade(in: false) }
@@ -317,5 +402,22 @@ private final class PillPanel {
         label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         panel.contentView = view
         return panel
+    }
+}
+
+/// The hidden Finder window the x-ray outline shows, for the click tap (its own thread) to
+/// take: a click inside it goes to its folder.
+enum XRayTarget {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var value: (bounds: CGRect, path: String)?
+
+    static func set(_ target: (bounds: CGRect, path: String)?) {
+        lock.lock(); defer { lock.unlock() }
+        value = target
+    }
+
+    static func current() -> (bounds: CGRect, path: String)? {
+        lock.lock(); defer { lock.unlock() }
+        return value
     }
 }

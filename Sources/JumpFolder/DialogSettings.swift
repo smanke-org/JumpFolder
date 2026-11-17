@@ -15,6 +15,13 @@ struct DialogSettings: View {
                     .disabled(!settings.clickThrough)
                 Caption("While an Open or Save dialog is in front, clicking a Finder window behind it takes the dialog to that window's folder, and Finder stays where it is. Hold Option (⌥) while clicking to bring Finder forward instead. With highlighting on, the window you point at gets a colored outline and a “Jump to” label.")
             }
+            Section("X-ray hidden Finder windows") {
+                Toggle("Behind full-screen apps", isOn: $settings.xrayFullScreen)
+                Toggle("On other Spaces and displays", isOn: $settings.xraySpaces)
+                Toggle("Behind other windows", isOn: $settings.xrayCovered)
+                Caption("When a Finder window is hidden, point where it sits, outside the dialog: a dashed outline and a “Jump to” label appear, and a click there takes the dialog to its folder. Nothing shows until you point at one.")
+            }
+            .disabled(!settings.clickThrough)
             Section {
                 Toggle("Show folder buttons around dialogs", isOn: $settings.edgeControls)
                 Picker("Style", selection: $settings.controlStyle) {
@@ -76,6 +83,7 @@ struct DialogSettings: View {
         .formStyle(.grouped)
         .onChange(of: settings.clickThrough) { DialogWatcher.shared.settingsChanged() }
         .onChange(of: settings.hoverHint) { HoverHint.shared.update() }
+        .onChange(of: settings.xrayOptions) { HoverHint.shared.update() }
         .onChange(of: settings.edgeControls) { DialogWatcher.shared.settingsChanged() }
         .onChange(of: settings.edgeSide) { DialogWatcher.shared.settingsChanged() }
         .onChange(of: settings.edgeLabels) { DialogWatcher.shared.settingsChanged() }

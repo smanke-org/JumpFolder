@@ -34,6 +34,9 @@ final class AppSettings {
         static let edgeSide = "edgeSide"
         static let edgeLabels = "edgeLabels"
         static let hoverHint = "hoverHint"
+        static let xrayFullScreen = "xrayFullScreen"
+        static let xraySpaces = "xraySpaces"
+        static let xrayCovered = "xrayCovered"
         static let controlStyle = "controlStyle"
         static let bottomBar = "bottomBar"
         static let bottomSource = "bottomSource"
@@ -115,6 +118,21 @@ final class AppSettings {
         didSet { defaults.set(hoverHint, forKey: Key.hoverHint) }
     }
 
+    /// X-ray: outline Finder windows the person can't see (Settings › Dialogs), when pointed
+    /// at outside the dialog: behind a full-screen app, on other Spaces, or covered by windows.
+    var xrayFullScreen: Bool {
+        didSet { defaults.set(xrayFullScreen, forKey: Key.xrayFullScreen) }
+    }
+    var xraySpaces: Bool {
+        didSet { defaults.set(xraySpaces, forKey: Key.xraySpaces) }
+    }
+    var xrayCovered: Bool {
+        didSet { defaults.set(xrayCovered, forKey: Key.xrayCovered) }
+    }
+    var xrayOptions: XRay.Options {
+        .init(behindFullScreen: xrayFullScreen, otherSpaces: xraySpaces, covered: xrayCovered)
+    }
+
     /// The strip of folder buttons beside every Open and Save dialog (Settings › Dialogs).
     var edgeControls: Bool {
         didSet { defaults.set(edgeControls, forKey: Key.edgeControls) }
@@ -162,6 +180,9 @@ final class AppSettings {
         shortcuts = Self.loadShortcuts(from: defaults)
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
         hoverHint = defaults.object(forKey: Key.hoverHint) as? Bool ?? true
+        xrayFullScreen = defaults.object(forKey: Key.xrayFullScreen) as? Bool ?? true
+        xraySpaces = defaults.object(forKey: Key.xraySpaces) as? Bool ?? true
+        xrayCovered = defaults.object(forKey: Key.xrayCovered) as? Bool ?? true
         controlStyle = defaults.string(forKey: Key.controlStyle).flatMap(ControlStyle.init(rawValue:)) ?? .bars
         bottomBar = defaults.object(forKey: Key.bottomBar) as? Bool ?? true
         bottomSource = defaults.string(forKey: Key.bottomSource).flatMap(BarSource.init(rawValue:)) ?? .recent
@@ -208,6 +229,9 @@ final class AppSettings {
         shortcuts = Self.loadShortcuts(from: defaults)
         clickThrough = defaults.object(forKey: Key.clickThrough) as? Bool ?? true
         hoverHint = defaults.object(forKey: Key.hoverHint) as? Bool ?? true
+        xrayFullScreen = defaults.object(forKey: Key.xrayFullScreen) as? Bool ?? true
+        xraySpaces = defaults.object(forKey: Key.xraySpaces) as? Bool ?? true
+        xrayCovered = defaults.object(forKey: Key.xrayCovered) as? Bool ?? true
         controlStyle = defaults.string(forKey: Key.controlStyle).flatMap(ControlStyle.init(rawValue:)) ?? .bars
         bottomBar = defaults.object(forKey: Key.bottomBar) as? Bool ?? true
         bottomSource = defaults.string(forKey: Key.bottomSource).flatMap(BarSource.init(rawValue:)) ?? .recent

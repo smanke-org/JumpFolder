@@ -20,6 +20,7 @@ enum FinderWindows {
         repeat with i from 1 to n
             try
                 set w to Finder window i
+                if collapsed of w then error number -128
                 set b to bounds of w
                 set p to ""
                 try
