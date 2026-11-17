@@ -11,7 +11,7 @@ struct FolderSettings: View {
         Form {
             Section("Favorite Folders") {
                 if settings.favorites.isEmpty {
-                    Caption("No favorites yet. Add folders here, or choose Add to Favorites from the star button beside a dialog.")
+                    Caption("No favorites yet. Add folders here, or choose Add to Favorites from the Favorites button above a dialog.")
                 }
                 List(selection: $selection) {
                     ForEach($settings.favorites) { $favorite in

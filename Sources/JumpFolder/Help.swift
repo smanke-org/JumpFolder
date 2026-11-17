@@ -59,7 +59,7 @@ enum Help {
 
     static var topics: [HelpTopic] { [
         HelpTopic(id: "getting-started", title: "Getting Started", symbol: "sparkles", blocks: [
-            .text("JumpFolder makes every app's Open and Save dialogs quicker. While a dialog is in front, click any Finder window behind it and the dialog goes to that window's folder. A strip of buttons beside the dialog lists your recent and favorite folders and Finder's open windows, and shows the dialog's folder in Finder."),
+            .text("JumpFolder makes every app's Open and Save dialogs quicker. While a dialog is in front, click any Finder window behind it and the dialog goes to that window's folder. Buttons above the dialog list your recent and favorite folders and Finder's open windows, and show the dialog's folder in Finder. A bar below it shows the dialog's folder path and a few folders to jump to."),
             .heading("Allow access"),
             .text("To see dialogs and the clicks around them, JumpFolder needs access. Turn on JumpFolder in System Settings › Privacy & Security › Device Control and Data Access. Until then the menu bar icon shows a warning sign and the menu's first item is \"Grant Access…\"."),
             .text("The first time JumpFolder asks Finder which folder a window shows, macOS asks whether JumpFolder may control Finder. Click Allow. You can change it later in Privacy & Security › Automation."),
@@ -94,11 +94,11 @@ enum Help {
 
         HelpTopic(id: "folders", title: "Recent and Favorite Folders", symbol: "star", blocks: [
             .text("A folder becomes recent when a dialog closes in it, or when JumpFolder takes a dialog there. Each app's last folder is listed first in that app's dialogs. Settings › Folders sets how many to remember and clears them. Recent folders stay on this Mac."),
-            .text("Favorites are folders you keep at hand. Add them in Settings › Folders or from the star button beside a dialog. Give one a shorter name, drag to reorder, or remove it. With settings sync on, favorites follow you to your other Macs."),
+            .text("Favorites are folders you keep at hand. Add them in Settings › Folders or with Add to Favorites in the Favorites button above a dialog. Give one a shorter name, drag to reorder, or remove it. With settings sync on, favorites follow you to your other Macs."),
         ]),
 
         HelpTopic(id: "shortcuts", title: "Shortcuts", symbol: "keyboard", blocks: [
-            .text("Each list beside a dialog can have a keyboard shortcut. None is set at first: set them in Settings › Shortcuts. They work while an Open or Save dialog is in front."),
+            .text("Each list above a dialog can have a keyboard shortcut. None is set at first: set them in Settings › Shortcuts. They work while an Open or Save dialog is in front."),
             .keys([
                 ("{shortcut:recents}", "Show Recent Folders"),
                 ("{shortcut:favorites}", "Show Favorite Folders"),
@@ -128,8 +128,8 @@ enum Help {
         ]),
 
         HelpTopic(id: "troubleshooting", title: "Troubleshooting", symbol: "wrench.and.screwdriver", blocks: [
-            .heading("Nothing happens beside dialogs"),
-            .text("JumpFolder needs access. Choose \"Grant Access…\" in the menu bar menu. If JumpFolder is on in Device Control and Data Access but nothing happens, remove it from the list and add it again, then quit and reopen JumpFolder."),
+            .heading("No buttons appear around dialogs"),
+            .text("JumpFolder needs access. Choose \"Grant Access…\" in the menu bar menu. Also check that \"Show folder buttons around dialogs\" is on in Settings › Dialogs, and that the app isn't set to be left alone in Per-App Settings. If JumpFolder is on in Device Control and Data Access but nothing happens, remove it from the list and add it again, then quit and reopen JumpFolder."),
             .heading("Clicking a Finder window doesn't move the dialog"),
             .text("Check that JumpFolder may control Finder in Privacy & Security › Automation. Another dialog helper that also takes clicks on Finder windows can get them first; turn its click-through off."),
             .heading("The dialog shows the Go to Folder sheet briefly"),
