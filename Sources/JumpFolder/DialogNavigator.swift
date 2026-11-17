@@ -61,12 +61,13 @@ enum DialogNavigator {
         let volume = (try? URL(fileURLWithPath: path).resourceValues(forKeys: [.volumeURLKey]).volume?.path) ?? "/"
         // ⌘↑ in a Save dialog's name field moves the caret instead, so no going up there.
         let ups = dialog.kind == .save ? 0 : 2
+        let sidebar = SidebarPlaces.read(in: dialog.element)
+        let isHidden = { (path: String) in (try? URL(fileURLWithPath: path).resourceValues(forKeys: [.isHiddenKey]).isHidden) == true }
+        // Dialogs don't list hidden folders (~/Library, /tmp…), so routes through them are dropped.
         guard let plan = FolderRoute.plan(to: path, from: current, home: NSHomeDirectory(), volume: volume, maxUps: ups,
-                                          real: { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }) else {
-            return false
-        }
-        // Dialogs don't list hidden folders (/tmp, /private…): no point looking for their rows.
-        if plan.opens.contains(where: { (try? URL(fileURLWithPath: $0).resourceValues(forKeys: [.isHiddenKey]).isHidden) == true }) {
+                                          sidebar: sidebar.map(\.path),
+                                          real: { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path },
+                                          hidden: isHidden) else {
             return false
         }
         Diagnostics.note("route to \(path): \(plan.start) then \(plan.opens.count) folder(s)")
@@ -88,6 +89,15 @@ enum DialogNavigator {
                     return false
                 }
             }
+        case .sidebar(let folder):
+            guard isFront(dialog), let place = sidebar.first(where: { $0.path == folder }) else { return false }
+            AXUIElementPerformAction(place.cell, "AXOpen" as CFString)
+            // The pop-up shows the sidebar's name for it ("OneDrive"), not always the folder's.
+            guard await waitForFolder(folder, popup: popup, for: rowTimeout, alsoNamed: place.name) else {
+                Diagnostics.note("sidebar \(place.name) didn't open")
+                return false
+            }
+            if plan.opens.isEmpty { return true }
         case .place(let place):
             guard isFront(dialog) else { return false }
             let (code, flags) = key(for: place)
@@ -183,11 +193,14 @@ enum DialogNavigator {
     }
 
     /// The pop-up above the list names the folder shown; wait for it to name `path`.
-    private static func waitForFolder(_ path: String, popup: AXUIElement, for timeout: Duration) async -> Bool {
+    private static func waitForFolder(_ path: String, popup: AXUIElement, for timeout: Duration,
+                                      alsoNamed name: String? = nil) async -> Bool {
         let deadline = ContinuousClock.now + timeout
         while true {
-            if let raw = AX.string(popup, kAXValueAttribute),
-               DialogWatcher.title(FolderPath.cleanedTitle(raw), matches: path) { return true }
+            if let raw = AX.string(popup, kAXValueAttribute) {
+                let title = FolderPath.cleanedTitle(raw)
+                if DialogWatcher.title(title, matches: path) || title == name { return true }
+            }
             guard ContinuousClock.now < deadline else { return false }
             try? await Task.sleep(for: .milliseconds(15))
         }

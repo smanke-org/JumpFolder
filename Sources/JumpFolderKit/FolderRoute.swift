@@ -26,6 +26,9 @@ public enum FolderRoute {
         case here
         case up(Int)
         case place(Place)
+        /// A folder in the dialog's sidebar (a favorite, or a cloud drive under Locations),
+        /// opened by clicking it there.
+        case sidebar(String)
     }
 
     public struct Plan: Equatable, Sendable {
@@ -43,7 +46,7 @@ public enum FolderRoute {
             switch start {
             case .here: opens.count
             case .up(let count): count + opens.count
-            case .place: 1 + opens.count
+            case .place, .sidebar: 1 + opens.count
             }
         }
     }
@@ -53,9 +56,12 @@ public enum FolderRoute {
     /// Computer lists as a row.
     /// `real` turns a path into the one the dialog's rows carry (symlinks resolved: a Desktop
     /// kept in a cloud folder lists that folder's path).
+    /// `sidebar` are the folders the dialog's sidebar can open with one click. `hidden` says
+    /// which folders the list leaves out (~/Library, /private…): routes through them are dropped.
     public static func plan(to target: String, from current: String?, home: String,
-                            volume: String = "/", maxUps: Int = 2,
-                            real: @escaping (String) -> String = { $0 }) -> Plan? {
+                            volume: String = "/", maxUps: Int = 2, sidebar: [String] = [],
+                            real: @escaping (String) -> String = { $0 },
+                            hidden: (String) -> Bool = { _ in false }) -> Plan? {
         let clean = { (path: String) in Self.clean(real(Self.clean(path))) }
         let target = clean(target)
         var plans: [Plan] = []
@@ -76,6 +82,10 @@ public enum FolderRoute {
                 plans.append(Plan(start: .place(.computer), opens: [clean(volume)] + below))
             }
         }
+        for path in sidebar {
+            if let opens = opens(from: clean(path), to: target) { plans.append(Plan(start: .sidebar(path), opens: opens)) }
+        }
+        plans.removeAll { $0.opens.contains(where: hidden) }
         // Stable: the first of equal plans wins, so "here" beats "up" beats a place.
         return plans.enumerated().min { a, b in
             (a.element.steps, a.offset) < (b.element.steps, b.offset)

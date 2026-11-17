@@ -192,6 +192,19 @@ import Testing
         #expect(plan == .init(start: .place(.computer), opens: ["/", "/Library", "/Library/Fonts"]))
     }
 
+    @Test func sidebarFavoriteBeatsLongWayRound() {
+        let cloud = "/Users/pat/Library/CloudStorage/Drive-Pat"
+        let plan = FolderRoute.plan(to: cloud + "/Files/House/HVAC", from: "/Users/pat/Downloads", home: home,
+                                    sidebar: [cloud, cloud + "/Files/House"], hidden: { $0 == "/Users/pat/Library" })
+        #expect(plan == .init(start: .sidebar(cloud + "/Files/House"), opens: [cloud + "/Files/House/HVAC"]))
+    }
+
+    @Test func routeThroughHiddenFolderIsDropped() {
+        let plan = FolderRoute.plan(to: "/Users/pat/Library/CloudStorage/Drive/A", from: nil, home: home,
+                                    hidden: { $0 == "/Users/pat/Library" })
+        #expect(plan == nil)
+    }
+
     @Test func hiddenFolderHasNoRoute() {
         #expect(FolderRoute.plan(to: "/Users/pat/.config/app", from: "/Users/pat", home: home) == nil)
     }
