@@ -18,6 +18,7 @@ Requires macOS 26 or later. Free.
 ## Features
 
 - **Click a Finder window to jump.** With an Open or Save dialog in front, click any Finder window behind it and the dialog goes to that folder. Finder doesn't come forward, so you keep going in the dialog. Point at a Finder window first and it gets a colored outline and a "Jump to" label with its folder's name. Hold ⌥ to bring Finder forward instead.
+- **X-ray hidden Finder windows.** App full screen, or the Finder window on another Space or under other windows? Point where it sits, outside the dialog: a dashed outline and a "Jump to" label show it, and a click there takes the dialog to its folder. Choose which hidden windows count in Settings › Dialogs.
 
 <p align="center"><img src="docs/images/jumpfolder-click-finder.jpg" width="760" alt="Pointing at a Finder window behind an Open dialog: the window is outlined and a Jump to Northwind Outfitters label follows the pointer"></p>
 
